@@ -66,7 +66,7 @@ func routes(_ app: Application) throws {
         .unwrap(or: Abort(.badRequest))
         .flatMap { acronym in
             acronym.delete(on: req.db)
-                .transform(to: "Data has been deleted successfully.")
+                .transform(to: "{\"success\": \"'\(acronym.short)' is successfully deleted\"}")
         }
     }
     
