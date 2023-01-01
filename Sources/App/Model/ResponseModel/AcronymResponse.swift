@@ -21,10 +21,12 @@ struct AcronymItem: Content {
     let short: String
     let long: String
     let displayText: String
+    let user: User?
     
     init(acronym: Acronym) {
         short = acronym.short
         long = acronym.long
         displayText = "'\(acronym.short)' stands for '\(acronym.long)'"
+        self.user = acronym.user
     }
 }

@@ -5,6 +5,7 @@
 //  Created by Karun Pant on 31/12/22.
 //
 
+import Foundation
 import Vapor
 import Fluent
 
@@ -82,7 +83,9 @@ private extension AcronymController {
         guard let searchTerm = req.query[String.self, at: "short"] else {
             throw Abort(.badRequest)
         }
+        // eager load a relation, pass a key path to the relation to the with method on query builder.
         return Acronym.query(on: req.db)
+            .with(\.$user)
             .filter(\.$short == searchTerm)
             .all()
             .map { acronyms in
