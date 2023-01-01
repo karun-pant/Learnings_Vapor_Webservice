@@ -23,10 +23,12 @@ public func configure(_ app: Application) throws {
 //    ), as: .psql)
     
     /// Using Docker DB by connection string
-    app.databases.use(try .postgres(url: "postgres://postgres:postgrespw@localhost:55000"), as: .psql)
-
-    app.migrations.add(CreateAcronym())
+    app.databases.use(try .postgres(url: "postgres://postgres:postgrespw@localhost:55001"), as: .psql)
+    
     app.migrations.add(CreateUser())
+    app.migrations.add(CreateAcronym())
+    app.migrations.add(CreateCategory())
+    app.migrations.add(CreateAcroCatPivot())
     app.logger.logLevel = .debug
     try app.autoMigrate().wait()
 

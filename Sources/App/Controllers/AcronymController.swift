@@ -22,6 +22,8 @@ struct AcronymController: RouteCollection {
         acronymRoute.get("search", use: search)
         acronymRoute.get("first", use: getFirst)
         acronymRoute.get("all", use: getAll)
+        acronymRoute.post("attach", "category", use: attachCategory)
+        acronymRoute.get("categories", use: getCategoriesForAcronym)
     }
 }
 
@@ -91,7 +93,9 @@ private extension AcronymController {
             .map { acronyms in
                 var accronymItems: [AcronymItem] = []
                 for acronym in acronyms {
-                    accronymItems.append(AcronymItem(acronym: acronym))
+                    // passing user seperately so we don't have to add unnecessary code when eager loading is not needed.
+                    accronymItems.append(AcronymItem(acronym: acronym,
+                                                     eagerLoadedUser: acronym.user))
                 }
                 return AcronymResponse(accronyms: accronymItems)
             }
@@ -129,5 +133,64 @@ private extension AcronymController {
                 return AcronymResponse(accronyms: acroymItems)
             })
         }
+    }
+}
+
+// Pivot setup
+private extension AcronymController {
+    /// adding a category to acronym
+    func attachCategory(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+        guard let acronymID = try? req.query.get(UUID.self ,at: "acronymID"),
+              let categoryID = try? req.query.get(UUID.self, at: "categoryID") else {
+            return req.eventLoop.future(.badRequest)
+        }
+        let acronymQuery = Acronym
+            .find(acronymID, on: req.db)
+            .unwrap(or: Abort(.notFound))
+        let categoryQuery = Category
+            .find(categoryID, on: req.db)
+            .unwrap(or: Abort(.notFound))
+        return acronymQuery
+            .and(categoryQuery)
+            .flatMap { acronym, category in
+            acronym
+                .$categories
+                .attach(category, on: req.db)
+                .transform(to: .created)
+        }
+    }
+    
+    /// fetch all categories of acronym
+    func getCategoriesForAcronym(_ req: Request) throws -> EventLoopFuture<[Category]> {
+        guard let acronymID = try? req.query.get(UUID.self ,at: "acronymID")else {
+            throw Abort(.badRequest)
+        }
+        return Acronym.find(acronymID, on: req.db)
+            .unwrap(or: Abort(.badRequest))
+            .flatMap { acronym in
+                acronym.$categories.get(on: req.db)
+            }
+    }
+    
+    /// Detach category from acronym
+    func detachCategory(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+        guard let acronymID = try? req.query.get(UUID.self ,at: "acronymID"),
+              let categoryID = try? req.query.get(UUID.self, at: "categoryID") else {
+            return req.eventLoop.future(.badRequest)
+        }
+        let acronymQuery = Acronym
+            .find(acronymID, on: req.db)
+            .unwrap(or: Abort(.notFound))
+        let categoryQuery = Category
+            .find(categoryID, on: req.db)
+            .unwrap(or: Abort(.notFound))
+        return acronymQuery
+            .and(categoryQuery)
+            .flatMap { acronym, category in
+                acronym
+                    .$categories
+                    .detach(category, on: req.db)
+                    .transform(to: .created)
+            }
     }
 }

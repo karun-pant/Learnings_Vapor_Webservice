@@ -23,10 +23,11 @@ struct AcronymItem: Content {
     let displayText: String
     let user: User?
     
-    init(acronym: Acronym) {
+    init(acronym: Acronym,
+         eagerLoadedUser user: User? = nil) {
         short = acronym.short
         long = acronym.long
         displayText = "'\(acronym.short)' stands for '\(acronym.long)'"
-        self.user = acronym.user
+        self.user = user
     }
 }

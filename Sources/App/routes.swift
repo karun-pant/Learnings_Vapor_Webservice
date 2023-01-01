@@ -6,4 +6,6 @@ func routes(_ app: Application) throws {
     try app.register(collection: acronymController)
     let userController = UserController()
     try app.register(collection: userController)
+    let categoryController = CategoryController()
+    try app.register(collection: categoryController)
 }

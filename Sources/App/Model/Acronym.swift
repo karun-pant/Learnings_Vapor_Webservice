@@ -25,6 +25,11 @@ final class Acronym: Model, Content {
     @Parent(key: "userID")
     var user: User
     
+    @Siblings(through: AcronymCategoryPivot.self,
+              from: \.$acronym,
+              to: \.$category)
+    var categories: [Category]
+    
     //“An empty initializer as required by Model. Fluent uses this to initialize models returned from database queries.”
     init() {}
     
