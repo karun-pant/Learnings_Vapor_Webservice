@@ -21,14 +21,25 @@ final class Acronym: Model, Content {
     @Field(key: "long")
     var long: String
     
+    // Parent child  relationship similar to Foreign key
+    @Parent(key: "userID")
+    var user: User
+    
     //“An empty initializer as required by Model. Fluent uses this to initialize models returned from database queries.”
     init() {}
     
     // Memberwise init
-    init(id: UUID? = nil, short: String, long: String) {
+    init(id: UUID? = nil, short: String, long: String, userID: User.IDValue) {
         self.id = id
         self.short = short
         self.long = long
+        self.$user.id = userID
     }
     
+}
+
+struct AcronymDTO: Content {
+    let short: String
+    let long: String
+    let userID: UUID
 }
