@@ -23,6 +23,7 @@ struct UserController: RouteCollection {
     }
     func getAll(_ req: Request) throws -> EventLoopFuture<[User]> {
         User.query(on: req.db)
+            .with(\.$acronyms)
             .all()
     }
     func getByID(_ req: Request) throws -> EventLoopFuture<User> {
