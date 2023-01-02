@@ -9,11 +9,11 @@ import Vapor
 
 struct AcronymResponse: Content {
     let errorDescription: String?
-    let accronyms: [AcronymItem]
+    let acronyms: [AcronymItem]
     init(errorDescription: String? = nil,
          accronyms: [AcronymItem] = []) {
         self.errorDescription = errorDescription
-        self.accronyms = accronyms
+        self.acronyms = accronyms
     }
 }
 

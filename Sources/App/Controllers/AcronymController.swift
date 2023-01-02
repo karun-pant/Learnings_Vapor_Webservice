@@ -13,7 +13,7 @@ struct AcronymController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
         let acronymRoute = routes.grouped("api", "v1", "acronym")
         // CRUD Operations
-        acronymRoute.post("add", use: create)
+        acronymRoute.post(use: create)
         acronymRoute.get("base_typed", use: getAllAsAcronym)
         acronymRoute.get("by", ":id", use: getSpecificByID)
         acronymRoute.put(":id", use: updateByID)
@@ -125,10 +125,14 @@ private extension AcronymController {
                     return AcronymResponse(accronyms: acroymItems)
                 })
         } else {
-            return Acronym.query(on: req.db).all().map({ acronyms in
+            return Acronym.query(on: req.db)
+                .with(\.$user)
+                .all()
+                .map({ acronyms in
                 var acroymItems: [AcronymItem] = []
                 for acronym in acronyms {
-                    acroymItems.append(AcronymItem(acronym: acronym))
+                    acroymItems.append(AcronymItem(acronym: acronym,
+                                                   eagerLoadedUser: acronym.user))
                 }
                 return AcronymResponse(accronyms: acroymItems)
             })
