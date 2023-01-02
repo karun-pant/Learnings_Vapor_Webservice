@@ -1,9 +1,7 @@
 #extend("Base"):
     #export("content"):
-       <h2>#(user.name)</h2>
-       <h4>@#(user.uName)</h4>
        <table class="table table-bordered table-hover">
-            <caption>List of Acronyms</caption>
+            <caption>List of Users</caption>
                 <thead class="table-light">
                     <tr>
                         <th scope="col">Short</th>
@@ -11,13 +9,13 @@
                     </tr>            
                 </thead>
                 <tbody>
-                    #for(acronym in acronyms):
+                    #for(user in users):
                         <tr>
                             <td>
-                                #(acronym.short)
+                                <a href="/user/#(user.id)" class="link-danger">@#(user.uName)</a>
                             </td>
                             <td>
-                                #(acronym.long)
+                                #(user.name)
                             </td>
                         </tr>
                     #endfor
