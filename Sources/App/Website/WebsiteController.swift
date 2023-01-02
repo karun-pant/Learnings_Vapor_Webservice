@@ -14,6 +14,7 @@ struct WebsiteController: RouteCollection {
         routes.get("acronym", ":acronymID", use: acronymDetail)
         routes.get("user", ":userID", use: userDetail)
         routes.get("user", "all", use: allUsersList)
+        routes.get("category", "all", use: allCategories)
     }
 }
 
@@ -22,8 +23,7 @@ private extension WebsiteController {
         Acronym.query(on: req.db)
             .all()
             .flatMap { acronyms in
-                let acronymsData = acronyms.isEmpty ? nil : acronyms
-                let context = IndexContext(title: "Home Page", acronyms: acronymsData)
+                let context = IndexContext(title: "Home Page", acronyms: acronyms)
                 return req.view.render("index", context)
             }
     }
@@ -46,10 +46,9 @@ private extension WebsiteController {
             .flatMap { user in
                 user.$acronyms.get(on: req.db)
                     .flatMap { acronyms in
-                        let acronymsRes = user.acronyms.isEmpty ? nil : user.acronyms
                         let context = UserContext(title: user.name,
                                                   user: user,
-                                                  acronyms: acronymsRes)
+                                                  acronyms: acronyms)
                         return req.view.render("UserDetail", context)
                     }
             }
@@ -61,6 +60,15 @@ private extension WebsiteController {
                 let context = AllUsersContext(title: "Users",
                                               users: users)
                 return req.view.render("AllUsers", context)
+            }
+    }
+    func allCategories(_ req: Request) throws -> EventLoopFuture<View> {
+        Category.query(on: req.db)
+            .all()
+            .flatMap { categories in
+                let context = AllCategoriesContext(title: "Categories",
+                                                   categories: categories)
+                return req.view.render("AllCategories", context)
             }
     }
 }

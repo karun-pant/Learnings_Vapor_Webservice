@@ -143,10 +143,10 @@ private extension AcronymController {
 // Pivot setup
 private extension AcronymController {
     /// adding a category to acronym
-    func attachCategory(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+    func attachCategory(_ req: Request) throws -> EventLoopFuture<String> {
         guard let acronymID = try? req.query.get(UUID.self ,at: "acronymID"),
               let categoryID = try? req.query.get(UUID.self, at: "categoryID") else {
-            return req.eventLoop.future(.badRequest)
+            return req.eventLoop.future("Missed Sending acronymID and/or categoryID")
         }
         let acronymQuery = Acronym
             .find(acronymID, on: req.db)
@@ -160,7 +160,7 @@ private extension AcronymController {
             acronym
                 .$categories
                 .attach(category, on: req.db)
-                .transform(to: .created)
+                .transform(to: "\(category.name) attached to \(acronym.short)")
         }
     }
     

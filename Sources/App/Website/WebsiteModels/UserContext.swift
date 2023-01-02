@@ -10,7 +10,7 @@ import Foundation
 struct UserContext: Encodable {
     let title: String
     let user: User
-    let acronyms: [Acronym]?
+    let acronyms: [Acronym]
 }
 
 struct AllUsersContext: Encodable {

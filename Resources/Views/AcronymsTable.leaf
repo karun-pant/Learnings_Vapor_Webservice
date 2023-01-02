@@ -1,0 +1,21 @@
+<table class="table table-bordered table-hover">
+<caption>List of Acronyms</caption>
+    <thead class="table-light">
+        <tr>
+            <th scope="col">Short</th>
+            <th scope="col">Long</th>
+        </tr>            
+    </thead>
+    <tbody>
+        #for(acronym in acronyms):
+            <tr>
+                <td>
+                    <a href="/acronym/#(acronym.id)" class="link-danger">#(acronym.short)</a>
+                </td>
+                <td>
+                    #(acronym.long)
+                </td>
+            </tr>
+        #endfor
+    </tbody>
+</table>

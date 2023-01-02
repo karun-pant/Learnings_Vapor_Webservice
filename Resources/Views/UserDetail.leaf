@@ -2,26 +2,6 @@
     #export("content"):
        <h2>#(user.name)</h2>
        <h4>@#(user.uName)</h4>
-       <table class="table table-bordered table-hover">
-            <caption>List of Acronyms</caption>
-                <thead class="table-light">
-                    <tr>
-                        <th scope="col">Short</th>
-                        <th scope="col">Long</th>
-                    </tr>            
-                </thead>
-                <tbody>
-                    #for(acronym in acronyms):
-                        <tr>
-                            <td>
-                                #(acronym.short)
-                            </td>
-                            <td>
-                                #(acronym.long)
-                            </td>
-                        </tr>
-                    #endfor
-                </tbody>
-            </table>
+       #extend("AcronymsTable")
     #endexport
 #endextend
