@@ -1,11 +1,31 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <title>Hello</title>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-    </head>
-    <body>
-    <h1>Hello World</h1>
-    </body>
-</html>
+#extend("Base"):
+    #export("content"):
+        <img src="/images/logo.png"
+            class="img-fluid mx-auto d-block" alt="Learnings Logo" width=230 height=200/>
+        #if(acronyms):
+            <table class="table table-bordered table-hover">
+            <caption>List of Acronyms</caption>
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">Short</th>
+                        <th scope="col">Long</th>
+                    </tr>            
+                </thead>
+                <tbody>
+                    #for(acronym in acronyms):
+                        <tr>
+                            <td>
+                                <a href="acronym/#(acronym.id)">#(acronym.short)</a>
+                            </td>
+                            <td>
+                                #(acronym.long)
+                            </td>
+                        </tr>
+                    #endfor
+                </tbody>
+            </table>
+        #else:
+            <h2>There aren't any acronyms yet.</h2>
+        #endif
+    #endexport
+#endextend

@@ -1,0 +1,7 @@
+#extend("Base"):
+#export("content"):
+    <h2>#(acronym.short):</h2>
+    <h4>#(acronym.long)</h4>
+    <p> Created by: #(user.name)
+#endexport
+#endextend
