@@ -26,6 +26,9 @@
                         <li class="nav-item">
                             <a class="nav-link active" aria-current="page" href="/category/all">Categories</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" aria-current="page" href="/acronym/create">Create An Acronym</a>
+                        </li>
                     </ul>
                 </div>
             </div>

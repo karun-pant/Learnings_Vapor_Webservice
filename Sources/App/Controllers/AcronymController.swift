@@ -24,6 +24,7 @@ struct AcronymController: RouteCollection {
         acronymRoute.get("all", use: getAll)
         acronymRoute.post("attach", "category", use: attachCategory)
         acronymRoute.get("categories", use: getCategoriesForAcronym)
+        acronymRoute.delete("detach", use: detachCategory)
     }
 }
 
@@ -177,10 +178,10 @@ private extension AcronymController {
     }
     
     /// Detach category from acronym
-    func detachCategory(_ req: Request) throws -> EventLoopFuture<HTTPStatus> {
+    func detachCategory(_ req: Request) throws -> EventLoopFuture<String> {
         guard let acronymID = try? req.query.get(UUID.self ,at: "acronymID"),
               let categoryID = try? req.query.get(UUID.self, at: "categoryID") else {
-            return req.eventLoop.future(.badRequest)
+            return req.eventLoop.future("Missed Sending acronymID and/or categoryID")
         }
         let acronymQuery = Acronym
             .find(acronymID, on: req.db)
@@ -194,7 +195,7 @@ private extension AcronymController {
                 acronym
                     .$categories
                     .detach(category, on: req.db)
-                    .transform(to: .created)
+                    .transform(to: "\(category.name) detached from \(acronym.short)")
             }
     }
 }

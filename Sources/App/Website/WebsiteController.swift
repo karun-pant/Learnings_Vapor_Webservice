@@ -12,9 +12,14 @@ struct WebsiteController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
         routes.get(use: indexHandler)
         routes.get("acronym", ":acronymID", use: acronymDetail)
+        routes.get("acronym", ":acronymID", "edit", use: editAcronym)
+        routes.post("acronym", ":acronymID", "edit", use: editAcronymPost)
+        routes.get("acronym", "create", use: createAcronym)
+        routes.post("acronym", "create", use: createAcronymPost)
         routes.get("user", ":userID", use: userDetail)
         routes.get("user", "all", use: allUsersList)
         routes.get("category", "all", use: allCategories)
+        routes.get("category", ":categoryID", use: categoryDetail)
     }
 }
 
@@ -40,6 +45,34 @@ private extension WebsiteController {
                     }
             }
     }
+    
+    func editAcronym(_ req: Request) throws -> EventLoopFuture<View> {
+        let acronym = Acronym.find(req.parameters.get("acronymID", as: UUID.self), on: req.db)
+            .unwrap(or: Abort(.notFound))
+        let users = User.query(on: req.db)
+            .all()
+        return acronym.and(users).flatMap { acronym, users in
+            let context = EditAcronymContext(acronym: acronym, users: users)
+            return req.view.render("CreateAcronym", context)
+        }
+    }
+    
+    func editAcronymPost(_ req: Request) throws -> EventLoopFuture<Response> {
+        let dto = try req.content.decode(AcronymDTO.self)
+        guard let acronymID = req.parameters.get("acronymID", as: UUID.self) else {
+            throw Abort(.internalServerError)
+        }
+        return Acronym.find(acronymID, on: req.db)
+            .unwrap(or: Abort(.notFound))
+            .flatMap { acronym in
+                acronym.long = dto.long
+                acronym.short = dto.short
+                acronym.$user.id = dto.userID
+                let redirect = req.redirect(to: "/acronym/\(acronymID)")
+                return acronym.save(on: req.db).transform(to: redirect)
+            }
+    }
+    
     func userDetail(_ req: Request) throws -> EventLoopFuture<View> {
         User.find(req.parameters.get("userID", as: UUID.self), on: req.db)
             .unwrap(or: Abort(.notFound))
@@ -69,6 +102,41 @@ private extension WebsiteController {
                 let context = AllCategoriesContext(title: "Categories",
                                                    categories: categories)
                 return req.view.render("AllCategories", context)
+            }
+    }
+    func categoryDetail(_ req: Request) throws -> EventLoopFuture<View> {
+        Category.find(req.parameters.get("categoryID", as: UUID.self), on: req.db)
+            .unwrap(or: Abort(.notFound))
+            .flatMap { category in
+                category.$acronyms.get(on: req.db)
+                    .flatMap { acronyms in
+                        let context = CategoryContext(title: category.name,
+                                                      category: category,
+                                                      acronyms: acronyms)
+                        return req.view.render("CategoryDetail", context)
+                    }
+            }
+    }
+    func createAcronym(_ req: Request) throws -> EventLoopFuture<View> {
+        User.query(on: req.db)
+            .all()
+            .flatMap { users in
+                let context = CreateAcronymContext(users: users)
+                return req.view.render("CreateAcronym", context)
+            }
+    }
+    
+    func createAcronymPost(_ req: Request) throws -> EventLoopFuture<Response> {
+        let dto = try req.content.decode(AcronymDTO.self)
+        let acronym = Acronym(short: dto.short,
+                              long: dto.long,
+                              userID: dto.userID)
+        return acronym.save(on: req.db)
+            .flatMapThrowing {
+                guard let id = acronym.id else {
+                    throw Abort(.internalServerError)
+                }
+                return req.redirect(to: "/acronym/\(id)")
             }
     }
 }

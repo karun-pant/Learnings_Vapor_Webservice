@@ -2,6 +2,10 @@
     #export("content"):
         <h2>#(acronym.short):</h2>
         <h4>#(acronym.long)</h4>
-        <p> Created by: <a href="/user/#(user.id)" class="link-danger">#(user.name)</a>
+        <p> Created by: <a href="/user/#(user.id)" class="link-danger">#(user.name)</a></p>
+        <form method="post" action="/acronyms/#(acronym.id)/delete">
+            <a class="btn btn-primary" href="/acronym/#(acronym.id)/edit" role="button">Edit</a>&nbsp;
+            <input class="btn btn-danger" type="submit" value="Delete" />
+        </form>
     #endexport
 #endextend

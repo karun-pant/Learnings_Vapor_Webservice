@@ -1,0 +1,56 @@
+#extend("Base"):
+    #export("content"):
+        <h2>#(title)</h2>
+        <form method="post">
+            <div class="form-floating mb-3">
+                <input class="form-control" 
+                type="text" name="short" 
+                placeholder="LOL, ROFL, AIIMS etc" 
+                aria-label="Acronym_Short" 
+                #if(isEditing):
+                    value="#(acronym.short)"
+                #endif
+                >
+                <label for="short" class="col-sm-2 col-form-label">Short</label>
+            </div>
+            <div class="form-floating mb-3">
+                <input class="form-control" 
+                type="text" 
+                name="long" 
+                placeholder="Lough out loud 😆" 
+                aria-label="Acronym_Short"
+                #if(isEditing):
+                    value="#(acronym.long)"
+                #endif
+                >
+                <label for="long" class="col-sm-2 col-form-label">Long</label>
+            </div>
+            <div class="form-floating mb-3">
+                <select class="form-select" name="userID" aria-label="Floating label select example">
+                    #if(!isEditing):
+                        <option>Select User</option>
+                    #endif
+                    #for(user in users):
+                        <option value=#(user.id)
+                        #if(isEditing):
+                            #if(user.id == acronym.user.id):
+                                selected
+                            #endif
+                        #endif
+                        >
+                        #(user.name) | @#(user.uName)
+                        </option>
+                    #endfor
+                </select>
+                <label for="floatingSelect">User</label>
+            </div>
+            <button type="submit" class="btn btn-primary">
+                #if(isEditing):
+                    Update
+                #else:
+                    Submit
+                #endif
+            </button>
+        </form>
+    #endexport
+#endextend
