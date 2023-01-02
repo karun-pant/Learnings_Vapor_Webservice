@@ -12,6 +12,7 @@ struct WebsiteController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
         routes.get(use: indexHandler)
         routes.get("acronym", ":acronymID", use: acronymDetail)
+        routes.get("user", ":userID", use: userDetail)
     }
 }
 
@@ -35,6 +36,19 @@ private extension WebsiteController {
                                                           acronym: acronym,
                                                           user: user)
                         return req.view.render("AcronymDetail", context)
+                    }
+            }
+    }
+    func userDetail(_ req: Request) throws -> EventLoopFuture<View> {
+        User.find(req.parameters.get("userID", as: UUID.self), on: req.db)
+            .unwrap(or: Abort(.notFound))
+            .flatMap { user in
+                user.$acronyms.get(on: req.db)
+                    .flatMap { acronyms in
+                        let context = UserContext(title: user.name,
+                                                  user: user,
+                                                  acronyms: user.acronyms)
+                        return req.view.render("UserDetail", context)
                     }
             }
     }

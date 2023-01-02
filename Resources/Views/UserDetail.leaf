@@ -1,10 +1,10 @@
 #extend("Base"):
     #export("content"):
-        <img src="/images/logo.png"
-            class="img-fluid mx-auto d-block" alt="Learnings Logo" width=230 height=200/>
-        #if(acronyms):
+       <h2>#(user.name)</h2>
+       <h4>@#(user.uName)</h4>
+       #if(acronyms):
             <table class="table table-bordered table-hover">
-            <caption>List of Acronyms</caption>
+            <caption>List of Acronyms by #(user.name)</caption>
                 <thead class="table-light">
                     <tr>
                         <th scope="col">Short</th>
@@ -15,7 +15,7 @@
                     #for(acronym in acronyms):
                         <tr>
                             <td>
-                                <a href="/acronym/#(acronym.id)" class="link-danger">#(acronym.short)</a>
+                                #(acronym.short)
                             </td>
                             <td>
                                 #(acronym.long)
