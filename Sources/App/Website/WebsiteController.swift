@@ -14,6 +14,7 @@ struct WebsiteController: RouteCollection {
         routes.get("acronym", ":acronymID", use: acronymDetail)
         routes.get("acronym", ":acronymID", "edit", use: editAcronym)
         routes.post("acronym", ":acronymID", "edit", use: editAcronymPost)
+        routes.post("acronym", ":acronymID", "delete", use: deleteAcronym)
         routes.get("acronym", "create", use: createAcronym)
         routes.post("acronym", "create", use: createAcronymPost)
         routes.get("user", ":userID", use: userDetail)
@@ -54,6 +55,15 @@ private extension WebsiteController {
         return acronym.and(users).flatMap { acronym, users in
             let context = EditAcronymContext(acronym: acronym, users: users)
             return req.view.render("CreateAcronym", context)
+        }
+    }
+    func deleteAcronym(_ req: Request) throws -> EventLoopFuture<Response> {
+        let acronym = Acronym.find(req.parameters.get("acronymID", as: UUID.self), on: req.db)
+            .unwrap(or: Abort(.notFound))
+        return acronym.flatMap { acronym in
+            let redirect = req.redirect(to: "/")
+            return acronym.delete(on: req.db)
+                .transform(to: redirect)
         }
     }
     
