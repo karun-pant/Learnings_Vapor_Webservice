@@ -8,4 +8,6 @@ func routes(_ app: Application) throws {
     try app.register(collection: userController)
     let categoryController = CategoryController()
     try app.register(collection: categoryController)
+    let website = WebsiteController()
+    try app.register(collection: website)
 }
