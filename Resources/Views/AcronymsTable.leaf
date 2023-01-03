@@ -4,7 +4,9 @@
         <tr>
             <th scope="col">Short</th>
             <th scope="col">Long</th>
-            <th scope="col">User Handle</th>
+            #if(title=="Home Page"):
+                <th scope="col">User Handle</th>
+            #endif
         </tr>            
     </thead>
     <tbody>

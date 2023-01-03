@@ -85,11 +85,41 @@ private extension WebsiteController {
         return Acronym.find(acronymID, on: req.db)
             .unwrap(or: Abort(.notFound))
             .flatMap { acronym in
+                
                 acronym.long = dto.long
                 acronym.short = dto.short
                 acronym.$user.id = dto.userID
-                let redirect = req.redirect(to: "/acronym/\(acronymID)")
-                return acronym.save(on: req.db).transform(to: redirect)
+                return acronym.save(on: req.db)
+                    .flatMap {
+                        acronym.$categories.get(on: req.db)
+                    }
+                    .flatMap { existingCategories in
+                        var existing = Set(existingCategories.compactMap { $0.name })
+                        let new = Set(dto.categories ?? [])
+                        var categoriesToAdd = new.subtracting(existing)
+                        var categoriesToRemove = existing.subtracting(new)
+                        var categoryResults: [EventLoopFuture<Void>] = []
+                        //attach
+                        for categoryName in categoriesToAdd {
+                            categoryResults.append(
+                                Category.attachCategory(name: categoryName,
+                                                        to: acronym,
+                                                        on: req)
+                            )
+                        }
+                        // detach
+                        for categoryName in categoriesToRemove {
+                            let categoryToRemove = existingCategories.first(where: { $0.name == categoryName })
+                            if let category = categoryToRemove {
+                                categoryResults.append(
+                                    acronym.$categories.detach(category, on: req.db)
+                                )
+                            }
+                        }
+                        let redirect = req.redirect(to: "/acronym/\(acronymID)")
+                        return categoryResults.flatten(on: req.eventLoop)
+                            .transform(to: redirect)
+                    }
             }
     }
     
