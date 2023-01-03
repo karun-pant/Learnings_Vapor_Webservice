@@ -4,6 +4,7 @@
         <tr>
             <th scope="col">Short</th>
             <th scope="col">Long</th>
+            <th scope="col">User Handle</th>
         </tr>            
     </thead>
     <tbody>
@@ -15,6 +16,11 @@
                 <td>
                     #(acronym.long)
                 </td>
+                #if(title=="Home Page"):
+                <td>
+                    <a href="/user/#(acronym.user.id)" class="link-danger">@#(acronym.user.uName)</a>
+                </td>
+                #endif
             </tr>
         #endfor
     </tbody>

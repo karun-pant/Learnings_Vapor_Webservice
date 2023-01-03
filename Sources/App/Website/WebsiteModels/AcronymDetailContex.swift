@@ -11,6 +11,7 @@ struct AcronymDetailContex: Encodable {
     let title: String
     let acronym: Acronym
     let user: User
+    let categories: [Category]
 }
 
 struct CreateAcronymContext: Encodable {
@@ -19,12 +20,9 @@ struct CreateAcronymContext: Encodable {
 }
 
 struct EditAcronymContext: Encodable {
-  // 1
-  let title = "Edit Acronym"
-  // 2
-  let acronym: Acronym
-  // 3
-  let users: [User]
-  // 4
-  let isEditing = true
+    let title = "Edit Acronym"
+    let acronym: Acronym
+    let users: [User]
+    let categories: [Category]
+    let isEditing = true
 }

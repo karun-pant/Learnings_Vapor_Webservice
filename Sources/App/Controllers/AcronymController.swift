@@ -33,7 +33,7 @@ struct AcronymController: RouteCollection {
 private extension AcronymController {
     func create(_ req: Request) throws -> EventLoopFuture<Acronym> {
         // Instead of acronym since now it has userID, we will use DTO(Data transfer object)
-//        let acronym = try req.content.decode(Acronym.self)
+        //        let acronym = try req.content.decode(Acronym.self)
         let acronymDTO = try req.content.decode(AcronymDTO.self)
         // Transpose DTO object to acronym.
         let acronym = Acronym(short: acronymDTO.short,
@@ -92,13 +92,7 @@ private extension AcronymController {
             .filter(\.$short == searchTerm)
             .all()
             .map { acronyms in
-                var accronymItems: [AcronymItem] = []
-                for acronym in acronyms {
-                    // passing user seperately so we don't have to add unnecessary code when eager loading is not needed.
-                    accronymItems.append(AcronymItem(acronym: acronym,
-                                                     eagerLoadedUser: acronym.user))
-                }
-                return AcronymResponse(accronyms: accronymItems)
+                return AcronymResponse(acronyms: acronyms)
             }
     }
     
@@ -119,24 +113,15 @@ private extension AcronymController {
                 .sort(\.$short, sortType)
                 .all()
                 .map({ acronyms in
-                    var acroymItems: [AcronymItem] = []
-                    for acronym in acronyms {
-                        acroymItems.append(AcronymItem(acronym: acronym))
-                    }
-                    return AcronymResponse(accronyms: acroymItems)
+                    return AcronymResponse(acronyms: acronyms)
                 })
         } else {
             return Acronym.query(on: req.db)
                 .with(\.$user)
                 .all()
                 .map({ acronyms in
-                var acroymItems: [AcronymItem] = []
-                for acronym in acronyms {
-                    acroymItems.append(AcronymItem(acronym: acronym,
-                                                   eagerLoadedUser: acronym.user))
-                }
-                return AcronymResponse(accronyms: acroymItems)
-            })
+                    return AcronymResponse(acronyms: acronyms)
+                })
         }
     }
 }
@@ -158,11 +143,11 @@ private extension AcronymController {
         return acronymQuery
             .and(categoryQuery)
             .flatMap { acronym, category in
-            acronym
-                .$categories
-                .attach(category, on: req.db)
-                .transform(to: "\(category.name) attached to \(acronym.short)")
-        }
+                acronym
+                    .$categories
+                    .attach(category, on: req.db)
+                    .transform(to: "\(category.name) attached to \(acronym.short)")
+            }
     }
     
     /// fetch all categories of acronym

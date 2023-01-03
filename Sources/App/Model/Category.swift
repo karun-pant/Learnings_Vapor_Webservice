@@ -29,3 +29,24 @@ final class Category: Model, Content {
         self.name = name
     }
 }
+
+extension Category {
+    static func attachCategory(name: String,
+                               to acronym: Acronym,
+                               on req: Request) -> EventLoopFuture<Void> {
+        return Category.query(on: req.db)
+            .filter(\.$name == name)
+            .first()
+            .flatMap { category in
+                if let existingCategory = category {
+                    return acronym.$categories.attach(existingCategory, on: req.db)
+                } else {
+                    // make a category then attach
+                    let category = Category(name: name)
+                    return category.save(on: req.db).flatMap {
+                        acronym.$categories.attach(category, on: req.db)
+                    }
+                }
+            }
+    }
+}

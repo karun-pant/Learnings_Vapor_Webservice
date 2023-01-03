@@ -27,21 +27,26 @@ struct WebsiteController: RouteCollection {
 private extension WebsiteController {
     func indexHandler(_ req: Request) throws -> EventLoopFuture<View> {
         Acronym.query(on: req.db)
+            .with(\.$user)
             .all()
-            .flatMap { acronyms in
-                let context = IndexContext(title: "Home Page", acronyms: acronyms)
+            .flatMap({ acronyms in
+                let response = AcronymResponse(acronyms: acronyms)
+                let context = IndexContext(title: "Home Page", acronyms: response.acronyms)
                 return req.view.render("index", context)
-            }
+            })
     }
     func acronymDetail(_ req: Request) throws -> EventLoopFuture<View> {
         Acronym.find(req.parameters.get("acronymID", as: UUID.self), on: req.db)
             .unwrap(or: Abort(.notFound))
             .flatMap { acronym in
-                acronym.$user.get(on: req.db)
-                    .flatMap { user in
+                let users = acronym.$user.get(on: req.db)
+                let categories = acronym.$categories.get(on: req.db)
+                return users.and(categories)
+                    .flatMap { user, categories in
                         let context = AcronymDetailContex(title: acronym.short,
                                                           acronym: acronym,
-                                                          user: user)
+                                                          user: user,
+                                                          categories: categories)
                         return req.view.render("AcronymDetail", context)
                     }
             }
@@ -53,8 +58,13 @@ private extension WebsiteController {
         let users = User.query(on: req.db)
             .all()
         return acronym.and(users).flatMap { acronym, users in
-            let context = EditAcronymContext(acronym: acronym, users: users)
-            return req.view.render("CreateAcronym", context)
+            acronym.$categories.get(on: req.db)
+                .flatMap { categories in
+                    let context = EditAcronymContext(acronym: acronym,
+                                                     users: users,
+                                                     categories: categories)
+                    return req.view.render("CreateAcronym", context)
+                }
         }
     }
     func deleteAcronym(_ req: Request) throws -> EventLoopFuture<Response> {
@@ -127,9 +137,11 @@ private extension WebsiteController {
                     }
             }
     }
+    
     func createAcronym(_ req: Request) throws -> EventLoopFuture<View> {
-        User.query(on: req.db)
-            .all()
+        let userQuery = User.query(on: req.db) .all()
+        
+        return userQuery
             .flatMap { users in
                 let context = CreateAcronymContext(users: users)
                 return req.view.render("CreateAcronym", context)
@@ -142,11 +154,22 @@ private extension WebsiteController {
                               long: dto.long,
                               userID: dto.userID)
         return acronym.save(on: req.db)
-            .flatMapThrowing {
+            .flatMap {
                 guard let id = acronym.id else {
-                    throw Abort(.internalServerError)
+                    return req.eventLoop.future(error: Abort(.internalServerError))
                 }
-                return req.redirect(to: "/acronym/\(id)")
+                var categoryQueries: [EventLoopFuture<Void>] = []
+                for category in dto.categories ?? [] {
+                    categoryQueries.append(
+                        Category.attachCategory(name: category,
+                                                to: acronym,
+                                                on: req)
+                    )
+                }
+                let redirects = req.redirect(to: "/acronym/\(id)")
+                return categoryQueries
+                    .flatten(on: req.eventLoop)
+                    .transform(to: redirects)
             }
     }
 }

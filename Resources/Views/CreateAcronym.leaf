@@ -2,7 +2,8 @@
     #export("content"):
         <h2>#(title)</h2>
         <form method="post">
-            <div class="form-floating mb-3">
+            <div class="mb-3">
+                <label for="short" class="col-sm-2 col-form-label">Short</label>
                 <input class="form-control" 
                 type="text" name="short" 
                 placeholder="LOL, ROFL, AIIMS etc" 
@@ -11,9 +12,9 @@
                     value="#(acronym.short)"
                 #endif
                 >
-                <label for="short" class="col-sm-2 col-form-label">Short</label>
             </div>
-            <div class="form-floating mb-3">
+            <div class="mb-3">
+                <label for="long" class="col-sm-2 col-form-label">Long</label>
                 <input class="form-control" 
                 type="text" 
                 name="long" 
@@ -23,10 +24,10 @@
                     value="#(acronym.long)"
                 #endif
                 >
-                <label for="long" class="col-sm-2 col-form-label">Long</label>
             </div>
-            <div class="form-floating mb-3">
-                <select class="form-select" name="userID" aria-label="Floating label select example">
+            <div class="mb-3">
+                <label for="floatingSelect">User</label>
+                <select class="form-select" name="userID">
                     #if(!isEditing):
                         <option>Select User</option>
                     #endif
@@ -42,15 +43,28 @@
                         </option>
                     #endfor
                 </select>
-                <label for="floatingSelect">User</label>
             </div>
-            <button type="submit" class="btn btn-primary">
-                #if(isEditing):
-                    Update
-                #else:
-                    Submit
-                #endif
-            </button>
+            <div class="mb-3">
+                <label for="categories">Categories</label>
+                <select name="categories[]" class="form-select" id="categories" placeholder="Categories" multiple="multiple">
+                    #if(isEditing):
+                        #for(category in categories):
+                            <option value="#(category.name)" selected="selected">
+                                #(category.name)
+                            </option>
+                        #endfor
+                    #endif
+                </select>
+            </div>
+            <div class="mb-3">
+                <button type="submit" class="btn btn-primary">
+                    #if(isEditing):
+                        Update
+                    #else:
+                        Submit
+                    #endif
+                </button>
+            </div>
         </form>
     #endexport
 #endextend

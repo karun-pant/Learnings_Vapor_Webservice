@@ -3,6 +3,16 @@
         <h2>#(acronym.short):</h2>
         <h4>#(acronym.long)</h4>
         <p> Created by: <a href="/user/#(user.id)" class="link-danger">#(user.name)</a></p>
+        <h3>Categories</h3>
+        <ul>
+            #for(category in categories):
+                <li>
+                    <a class="link-danger" href="/category/#(category.id)">
+                        #(category.name)
+                    </a>
+                </li>
+            #endfor
+        </ul>
         <form method="post" action="/acronym/#(acronym.id)/delete">
             <a class="btn btn-primary" href="/acronym/#(acronym.id)/edit" role="button">Edit</a>&nbsp;
             <input class="btn btn-danger" type="submit" value="Delete" />

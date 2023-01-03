@@ -1,7 +1,9 @@
 #extend("Base"):
     #export("content"):
-        <img src="/images/logo.png"
-            class="img-fluid mx-auto d-block" alt="Learnings Logo" width=230 height=200/>
-        #extend("AcronymsTable")
+        <div class="text-center">
+            <img src="/images/logo.png"
+                class="img-fluid mx-auto d-block" alt="Learnings Logo" width=230 height=200/>
+            #extend("AcronymsTable")
+        </div>
     #endexport
 #endextend

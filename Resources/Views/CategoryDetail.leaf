@@ -3,5 +3,4 @@
         <h2>Acronyms Related to '#(category.name)'</h2>
         #extend("AcronymsTable")
     #endexport
-    
 #endextend
