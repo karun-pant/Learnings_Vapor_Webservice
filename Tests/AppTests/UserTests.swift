@@ -13,6 +13,7 @@ final class UserTests: XCTestCase {
     var app: Application!
     let expectedName = "Test User"
     let expectedUserName = "TUSer"
+    let pass = "password"
     
     override func setUpWithError() throws {
         // Put setup code here. This method is called before the invocation of each test method in the class.
@@ -30,7 +31,7 @@ final class UserTests: XCTestCase {
                                               userName: expectedUserName,
                                               on: app.db)
         try expectedUser.save(on: app.db).wait()
-        let anotherUser = User(name: "Testing Bob", uName: "TBob")
+        let anotherUser = User(name: "Testing Bob", uName: "TBob", password: pass)
         try anotherUser.save(on: app.db).wait()
         
         // test
@@ -40,7 +41,7 @@ final class UserTests: XCTestCase {
     }
     
     func testCreateUser() throws {
-        let expectedUser = User(name: expectedName, uName: expectedUserName)
+        let expectedUser = User(name: expectedName, uName: expectedUserName, password: pass)
         try app.test(.POST, User.apiBase, beforeRequest: { req in
             try req.content.encode(expectedUser)
         }, afterResponse: { response in

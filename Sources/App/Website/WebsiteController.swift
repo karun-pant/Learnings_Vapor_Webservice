@@ -94,10 +94,10 @@ private extension WebsiteController {
                         acronym.$categories.get(on: req.db)
                     }
                     .flatMap { existingCategories in
-                        var existing = Set(existingCategories.compactMap { $0.name })
+                        let existing = Set(existingCategories.compactMap { $0.name })
                         let new = Set(dto.categories ?? [])
-                        var categoriesToAdd = new.subtracting(existing)
-                        var categoriesToRemove = existing.subtracting(new)
+                        let categoriesToAdd = new.subtracting(existing)
+                        let categoriesToRemove = existing.subtracting(new)
                         var categoryResults: [EventLoopFuture<Void>] = []
                         //attach
                         for categoryName in categoriesToAdd {

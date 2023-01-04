@@ -5,7 +5,6 @@ import Leaf
 
 // configures your application
 public func configure(_ app: Application) throws {
-    // uncomment to serve files from /Public folder
     app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
     app.views.use(.leaf)
     if app.environment == .testing {
@@ -26,10 +25,10 @@ public func configure(_ app: Application) throws {
            -e POSTGRES_PASSWORD=nurak \
            -p 5432:5432 -d postgres
           */
-         
+        let port = app.environment.name == "website" ? PostgresConfiguration.ianaPortNumber : 5434
         app.databases.use(.postgres(
             hostname: Environment.get("DATABASE_HOST") ?? "localhost",
-            port: Environment.get("DATABASE_PORT").flatMap(Int.init(_:)) ?? PostgresConfiguration.ianaPortNumber,
+            port: Environment.get("DATABASE_PORT").flatMap(Int.init(_:)) ?? port,
             username: Environment.get("DATABASE_USERNAME") ?? "karun_learning",
             password: Environment.get("DATABASE_PASSWORD") ?? "nurak",
             database: Environment.get("DATABASE_NAME") ?? "learnings_database"

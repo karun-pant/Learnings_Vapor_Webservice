@@ -24,7 +24,7 @@ extension User {
     static func createAndSave(name: String = "Test User",
                   userName: String = "TUser",
                   on db: Database) throws -> User {
-        let user = User(name: name, uName: userName)
+        let user = User(name: name, uName: userName, password: "password")
         try user.save(on: db).wait()
         return user
     }

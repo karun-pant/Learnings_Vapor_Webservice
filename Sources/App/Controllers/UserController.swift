@@ -16,18 +16,20 @@ struct UserController: RouteCollection {
         userReqGroup.get("by", ":userID", use: getByID)
     }
     
-    func create(_ req: Request) throws -> EventLoopFuture<User> {
+    func create(_ req: Request) throws -> EventLoopFuture<User.Public> {
         let user = try req.content.decode(User.self)
         return user.save(on: req.db)
-            .map { user }
+            .map { user.publicUser }
     }
-    func getAll(_ req: Request) throws -> EventLoopFuture<[User]> {
+    func getAll(_ req: Request) throws -> EventLoopFuture<[User.Public]> {
         User.query(on: req.db)
             .with(\.$acronyms)
             .all()
+            .map { User.publicUsers($0) }
     }
-    func getByID(_ req: Request) throws -> EventLoopFuture<User> {
+    func getByID(_ req: Request) throws -> EventLoopFuture<User.Public> {
         User.find(req.parameters.get("userID"), on: req.db)
             .unwrap(or: Abort(.badRequest))
+            .map { $0.publicUser }
     }
 }
