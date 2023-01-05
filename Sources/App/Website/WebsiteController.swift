@@ -88,7 +88,6 @@ private extension WebsiteController {
                 
                 acronym.long = dto.long
                 acronym.short = dto.short
-                acronym.$user.id = dto.userID
                 return acronym.save(on: req.db)
                     .flatMap {
                         acronym.$categories.get(on: req.db)
@@ -180,9 +179,10 @@ private extension WebsiteController {
     
     func createAcronymPost(_ req: Request) throws -> EventLoopFuture<Response> {
         let dto = try req.content.decode(AcronymDTO.self)
-        let acronym = Acronym(short: dto.short,
+        let user = try req.auth.require(User.self)
+        let acronym = try Acronym(short: dto.short,
                               long: dto.long,
-                              userID: dto.userID)
+                                  userID: user.requireID())
         return acronym.save(on: req.db)
             .flatMap {
                 guard let id = acronym.id else {

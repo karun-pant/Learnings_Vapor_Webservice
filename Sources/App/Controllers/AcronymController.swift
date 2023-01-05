@@ -13,18 +13,22 @@ struct AcronymController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
         let acronymRoute = routes.grouped("api", "v1", "acronym")
         // CRUD Operations
-        acronymRoute.post(use: create)
         acronymRoute.get("base_typed", use: getAllAsAcronym)
         acronymRoute.get("by", ":id", use: getSpecificByID)
-        acronymRoute.put(":id", use: updateByID)
-        acronymRoute.delete(":id", use: delete)
         // Fluent Operations
         acronymRoute.get("search", use: search)
         acronymRoute.get("first", use: getFirst)
         acronymRoute.get("all", use: getAll)
-        acronymRoute.post("attach", "category", use: attachCategory)
         acronymRoute.get("categories", use: getCategoriesForAcronym)
-        acronymRoute.delete("detach", use: detachCategory)
+        // auth middleware
+        let tokenAuth = Token.authenticator()
+        let guardAuth = User.guardMiddleware()
+        let protected = acronymRoute.grouped(tokenAuth, guardAuth)
+        protected.post(use: create)
+        protected.put(":id", use: updateByID)
+        protected.delete(":id", use: delete)
+        protected.post("attach", "category", use: attachCategory)
+        protected.delete("detach", use: detachCategory)
     }
 }
 
@@ -36,9 +40,10 @@ private extension AcronymController {
         //        let acronym = try req.content.decode(Acronym.self)
         let acronymDTO = try req.content.decode(AcronymDTO.self)
         // Transpose DTO object to acronym.
-        let acronym = Acronym(short: acronymDTO.short,
-                              long: acronymDTO.long,
-                              userID: acronymDTO.userID)
+        let user = try req.auth.require(User.self)
+        let acronym = try Acronym(short: acronymDTO.short,
+                                  long: acronymDTO.long,
+                                  userID: user.requireID())
         return acronym.save(on: req.db).map {
             acronym
         }
@@ -55,24 +60,31 @@ private extension AcronymController {
     }
     
     func updateByID(_ req: Request) throws -> EventLoopFuture<Acronym> {
-        let updatedAcronym = try req.content.decode(Acronym.self)
+        let updatedAcronym = try req.content.decode(AcronymDTO.self)
+        let userID = try req.auth.require(User.self).requireID()
         return Acronym.find(req.parameters.get("id"), on: req.db)
             .unwrap(or: Abort(.badRequest))
             .flatMap { acronym in
                 acronym.short = updatedAcronym.short
                 acronym.long = updatedAcronym.long
+                acronym.$user.id = userID
                 return acronym.save(on: req.db).map {
                     acronym
                 }
             }
     }
     
-    func delete(_ req: Request) -> EventLoopFuture<String> {
-        Acronym.find(req.parameters.get("id"),
-                     on: req.db)
+    func delete(_ req: Request) throws -> EventLoopFuture<String> {
+        let authUser = try req.auth.require(User.self)
+        let userIDFromReq = try authUser.requireID()
+        return Acronym.find(req.parameters.get("id"),
+                            on: req.db)
         .unwrap(or: Abort(.badRequest))
         .flatMap { acronym in
-            acronym.delete(on: req.db)
+            guard acronym.$user.id == userIDFromReq else {
+                return req.eventLoop.future("{\"error\": \"You are not authorised to delete this 😡\"}")
+            }
+            return acronym.delete(on: req.db)
                 .transform(to: "{\"success\": \"'\(acronym.short)' is successfully deleted\"}")
         }
     }

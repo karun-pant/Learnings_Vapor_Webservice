@@ -49,8 +49,7 @@ final class AcronymTests: XCTestCase {
         let expectedUser = try User.createAndSave(on: app.db)
         let asap = Acronym.SampleAcronym.asap
         let acronymDTO = AcronymDTO(short: asap.short,
-                                    long: asap.long,
-                                    userID: expectedUser.id!)
+                                    long: asap.long)
         try app.test(.POST, Acronym.apiBase, beforeRequest: { req in
             try req.content.encode(acronymDTO)
         }, afterResponse: { response in
@@ -64,8 +63,7 @@ final class AcronymTests: XCTestCase {
         
         let lol = Acronym.SampleAcronym.asap
         let acronymDTO1 = AcronymDTO(short: lol.short,
-                                     long: lol.long,
-                                     userID: expectedUser.id!)
+                                     long: lol.long)
         try app.test(.POST, Acronym.apiBase, beforeRequest: { req in
             try req.content.encode(acronymDTO1)
         }, afterResponse: { response in
@@ -217,7 +215,7 @@ private extension AcronymTests {
         }
     }
     
-    func expectationUser(_ user: User,
+    func expectationUser(_ user: User.Public,
                          expectedName: String,
                          expectedUName: String,
                          file: StaticString = #file,

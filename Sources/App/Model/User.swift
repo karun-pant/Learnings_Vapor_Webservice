@@ -62,3 +62,13 @@ final class User: Model, Content {
         users.map { Public($0) }
     }
 }
+
+extension User: ModelAuthenticatable {
+    static var usernameKey = \User.$uName
+    
+    static var passwordHashKey = \User.$password
+    
+    func verify(password: String) throws -> Bool {
+        try Bcrypt.verify(password, created: self.password)
+    }
+}

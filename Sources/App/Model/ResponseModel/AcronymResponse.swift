@@ -30,14 +30,14 @@ struct AcronymItem: Content {
     let short: String
     let long: String
     let displayText: String
-    let user: User?
+    let user: User.Public?
     
     init(acronym: Acronym,
          eagerLoadedUser user: User? = nil) {
         short = acronym.short
         long = acronym.long
         displayText = "'\(acronym.short)' stands for '\(acronym.long)'"
-        self.user = user
+        self.user = user?.publicUser
         id = acronym.id
     }
 }

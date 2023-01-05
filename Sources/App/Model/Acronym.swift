@@ -46,15 +46,12 @@ final class Acronym: Model, Content {
 struct AcronymDTO: Content {
     let short: String
     let long: String
-    let userID: UUID
     let categories: [String]?
     init(short: String,
          long: String,
-         userID: UUID,
          categories: [String]? = nil) {
         self.short = short
         self.long = long
-        self.userID = userID
         self.categories = categories
     }
 }
