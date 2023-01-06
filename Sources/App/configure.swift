@@ -12,9 +12,9 @@ public func configure(_ app: Application) throws {
             hostname: Environment.get("DATABASE_HOST") ?? "localhost",
             // USING A DIFFERENT POST FOR TESTS.
             port: Environment.get("DATABASE_PORT").flatMap(Int.init(_:)) ?? 5433,
-            username: Environment.get("DATABASE_USERNAME") ?? "learning_tests",
+            username: Environment.get("DATABASE_USERNAME") ?? "karun_learning",
             password: Environment.get("DATABASE_PASSWORD") ?? "nurak",
-            database: Environment.get("DATABASE_NAME") ?? "learning_test_db"
+            database: Environment.get("DATABASE_NAME") ?? "learnings_database"
         ), as: .psql)
     } else {
          /*
@@ -36,6 +36,7 @@ public func configure(_ app: Application) throws {
     }
     
     app.migrations.add(CreateUser())
+    app.migrations.add(CreateAdminUser())
     app.migrations.add(CreateAcronym())
     app.migrations.add(CreateCategory())
     app.migrations.add(CreateAcroCatPivot())

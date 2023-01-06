@@ -21,6 +21,20 @@ struct WebsiteController: RouteCollection {
         routes.get("user", "all", use: allUsersList)
         routes.get("category", "all", use: allCategories)
         routes.get("category", ":categoryID", use: categoryDetail)
+        
+    }
+}
+
+private extension WebsiteController {
+    func login(_ req: Request) throws -> EventLoopFuture<View> {
+        let context: LoginContext
+        if let error = req.query[Bool.self, at: "error"], error {
+            context = LoginContext(loginError: true)
+        } else {
+            context = LoginContext()
+        }
+        return req.view.render("login", context)
+        
     }
 }
 
