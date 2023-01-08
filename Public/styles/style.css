@@ -1,0 +1,11 @@
+#container-footer {
+    vertical-align: middle;
+    padding-left: 16px;
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 60px;
+    line-height: 30px;
+    background-color: #8D021F;
+    color: bisque;
+}

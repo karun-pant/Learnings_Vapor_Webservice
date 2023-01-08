@@ -1,7 +1,14 @@
 #extend("Base"):
     #export("content"):
         <h2>#(title)</h2>
+        #if(error):
+            <div class="alert alert-danger mt-3" role="alert">
+            #(error)<br/>
+            See all Acronyms: <a href="/">See all</a>
+        </div>
+        #endif
         <form method="post">
+            <input type="hidden" name="csrf" value=#(csrf)>
             <div class="mb-3">
                 <label for="short" class="col-sm-2 col-form-label">Short</label>
                 <input class="form-control" 
@@ -24,25 +31,6 @@
                     value="#(acronym.long)"
                 #endif
                 >
-            </div>
-            <div class="mb-3">
-                <label for="floatingSelect">User</label>
-                <select class="form-select" name="userID">
-                    #if(!isEditing):
-                        <option>Select User</option>
-                    #endif
-                    #for(user in users):
-                        <option value=#(user.id)
-                        #if(isEditing):
-                            #if(user.id == acronym.user.id):
-                                selected
-                            #endif
-                        #endif
-                        >
-                        #(user.name) | @#(user.uName)
-                        </option>
-                    #endfor
-                </select>
             </div>
             <div class="mb-3">
                 <label for="categories">Categories</label>

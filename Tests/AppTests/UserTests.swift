@@ -8,22 +8,11 @@
 import XCTVapor
 @testable import App
 
-final class UserTests: XCTestCase {
+final class UserTests: BaseTestSetup {
     
-    var app: Application!
     let expectedName = "Test User"
     let expectedUserName = "TUSer"
     let pass = "password"
-    
-    override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
-        app = try Application.configureForTest()
-    }
-    
-    override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
-        app.shutdown()
-    }
     
     func testUserRetrieval() throws {
         // insert

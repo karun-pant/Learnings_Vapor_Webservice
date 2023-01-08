@@ -8,19 +8,7 @@
 import XCTVapor
 @testable import App
 
-final class CategoryTests: XCTestCase {
-    
-    var app: Application!
-    
-    override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
-        app = try Application.configureForTest()
-    }
-    
-    override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
-        app.shutdown()
-    }
+final class CategoryTests: BaseTestSetup {
     
     func testCategoryRetrieval() throws {
         try App.Category.saveAllSamples(on: app.db)

@@ -10,20 +10,35 @@ import Leaf
 
 struct WebsiteController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
-        routes.get(use: indexHandler)
-        routes.get("acronym", ":acronymID", use: acronymDetail)
-        routes.get("acronym", ":acronymID", "edit", use: editAcronym)
-        routes.post("acronym", ":acronymID", "edit", use: editAcronymPost)
-        routes.post("acronym", ":acronymID", "delete", use: deleteAcronym)
-        routes.get("acronym", "create", use: createAcronym)
-        routes.post("acronym", "create", use: createAcronymPost)
-        routes.get("user", ":userID", use: userDetail)
-        routes.get("user", "all", use: allUsersList)
-        routes.get("category", "all", use: allCategories)
-        routes.get("category", ":categoryID", use: categoryDetail)
+        routes.get("login" ,use: login)
+        /// This creates a route group that runs DatabaseSessionAuthenticator before the route handlers. This middleware reads the cookie from the request and looks up the session ID in the application’s session list. If the session contains a user, DatabaseSessionAuthenticator adds it to the request’s authentication cache, making the user available later in the process.
+        let authSessionRoutes = routes.grouped(User.sessionAuthenticator())
+        let credentialAuthRoutes = authSessionRoutes.grouped(User.credentialsAuthenticator())
+        credentialAuthRoutes.post("login", use: loginHandler)
         
+        /// Adding all routes where user might be needed to `authSessionRoutes` makes the User available to these pages. This is useful for displaying user-specific content, such as a profile link, on any page you desire.
+        authSessionRoutes.get(use: indexHandler)
+        authSessionRoutes.get("acronym", ":acronymID", use: acronymDetail)
+        authSessionRoutes.get("acronym", ":acronymID", "edit", use: editAcronym)
+        authSessionRoutes.get("user", ":userID", use: userDetail)
+        authSessionRoutes.get("user", "all", use: allUsersList)
+        authSessionRoutes.get("category", "all", use: allCategories)
+        authSessionRoutes.get("category", ":categoryID", use: categoryDetail)
+        authSessionRoutes.post("logout", use: logout)
+        authSessionRoutes.get("register", use: registerRender)
+        authSessionRoutes.post("register", use: registerPost)
+        
+        
+        /// “This creates a new route group, extending from authSessionsRoutes, that includes RedirectMiddleware for User. The application runs a request through RedirectMiddleware before it reaches the route handler, but after DatabaseSessionAuthenticator. This allows RedirectMiddleware to check for an authenticated user. RedirectMiddleware requires you to specify the path for redirecting unauthenticated users.
+        let protectedRoutes = authSessionRoutes.grouped(User.redirectMiddleware(path: "/login"))
+        protectedRoutes.post("acronym", ":acronymID", "edit", use: editAcronymPost)
+        protectedRoutes.post("acronym", ":acronymID", "delete", use: deleteAcronym)
+        protectedRoutes.get("acronym", "create", use: createAcronym)
+        protectedRoutes.post("acronym", "create", use: createAcronymPost)
     }
 }
+
+//MARK: - Login
 
 private extension WebsiteController {
     func login(_ req: Request) throws -> EventLoopFuture<View> {
@@ -34,21 +49,105 @@ private extension WebsiteController {
             context = LoginContext()
         }
         return req.view.render("login", context)
-        
+    }
+    func loginHandler(_ req: Request) throws -> EventLoopFuture<Response> {
+        if req.auth.has(User.self) {
+            return req.eventLoop.future(req.redirect(to: "/"))
+        } else {
+            let context = LoginContext(loginError: true)
+            return req.view.render("login", context)
+                .encodeResponse(for: req)
+        }
+    }
+    func logout(_ req: Request) throws -> Response {
+        req.auth.logout(User.self)
+        return req.redirect(to: "/")
     }
 }
 
+// MARK: - Register
+
 private extension WebsiteController {
-    func indexHandler(_ req: Request) throws -> EventLoopFuture<View> {
-        Acronym.query(on: req.db)
-            .with(\.$user)
-            .all()
-            .flatMap({ acronyms in
-                let response = AcronymResponse(acronyms: acronyms)
-                let context = IndexContext(title: "Home Page", acronyms: response.acronyms)
-                return req.view.render("index", context)
-            })
+    func registerRender(_ req: Request) throws -> EventLoopFuture<View> {
+        let context: RegisterContext
+        if let message = try? req.query.get(String.self ,at: "message") {
+            context = RegisterContext(message: message)
+        } else {
+            context = RegisterContext()
+        }
+        return req.view.render("register", context)
     }
+    func registerPost(_ req: Request) throws -> EventLoopFuture<Response> {
+        do {
+            try UserDTO.validate(content: req)
+        } catch let error as ValidationsError {
+            let message = error.description.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "Unknown Error"
+            return req.eventLoop.future(req.redirect(to: "/register?message=\(message)"))
+        }
+        let registerDTO = try req.content.decode(UserDTO.self)
+        let password = try Bcrypt.hash(registerDTO.password)
+        let user = User(name: registerDTO.name, uName: registerDTO.userName, password: password)
+        return user.save(on: req.db)
+            .map {
+                req.auth.login(user)
+                return req.redirect(to: "/")
+            }
+    }
+}
+
+// MARK: - Acronym
+
+private extension WebsiteController {
+    
+    func createAcronym(_ req: Request) throws -> EventLoopFuture<View> {
+        let csrf = [UInt8].random(count: 16).base64
+        let context: CreateAcronymContext
+        if let errorMessage = try? req.query.get(String.self ,at: "error") {
+            context = CreateAcronymContext(csrf: csrf, error: errorMessage)
+        } else {
+            context = CreateAcronymContext(csrf: csrf)
+        }
+        req.session.data["CSRF_TOKEN"] = csrf
+        return req.view.render("CreateAcronym", context)
+    }
+    
+    func createAcronymPost(_ req: Request) throws -> EventLoopFuture<Response> {
+        let dto = try req.content.decode(AcronymDTO.self)
+        let expectedToken = req.session.data["CSRF_TOKEN"]
+        // clear token once used we will create a new one everytime.
+        req.session.data["CSRF_TOKEN"] = nil
+        guard let expectedToken = expectedToken,
+              let csrfFromDTO = dto.csrf,
+              csrfFromDTO == expectedToken else {
+            throw Abort(.unauthorized)
+        }
+        let user = try req.auth.require(User.self)
+        let acronym = try Acronym(short: dto.short,
+                                  long: dto.long,
+                                  userID: user.requireID())
+        return acronym.save(on: req.db)
+            .flatMap {
+                guard let id = acronym.id else {
+                    return req.eventLoop.future(error: Abort(.internalServerError))
+                }
+                var categoryQueries: [EventLoopFuture<Void>] = []
+                for category in dto.categories ?? [] {
+                    categoryQueries.append(
+                        Category.attachCategory(name: category,
+                                                to: acronym,
+                                                on: req)
+                    )
+                }
+                let redirects = req.redirect(to: "/acronym/\(id)")
+                return categoryQueries
+                    .flatten(on: req.eventLoop)
+                    .transform(to: redirects)
+            }.flatMapError { _ in
+                let redirects = req.redirect(to: "/acronym/create?error=Acronym is already created. Try adding something new.")
+                return req.eventLoop.future(redirects)
+            }
+    }
+    
     func acronymDetail(_ req: Request) throws -> EventLoopFuture<View> {
         Acronym.find(req.parameters.get("acronymID", as: UUID.self), on: req.db)
             .unwrap(or: Abort(.notFound))
@@ -69,13 +168,10 @@ private extension WebsiteController {
     func editAcronym(_ req: Request) throws -> EventLoopFuture<View> {
         let acronym = Acronym.find(req.parameters.get("acronymID", as: UUID.self), on: req.db)
             .unwrap(or: Abort(.notFound))
-        let users = User.query(on: req.db)
-            .all()
-        return acronym.and(users).flatMap { acronym, users in
+        return acronym.flatMap { acronym in
             acronym.$categories.get(on: req.db)
                 .flatMap { categories in
                     let context = EditAcronymContext(acronym: acronym,
-                                                     users: users,
                                                      categories: categories)
                     return req.view.render("CreateAcronym", context)
                 }
@@ -136,6 +232,26 @@ private extension WebsiteController {
             }
     }
     
+}
+
+private extension WebsiteController {
+    func indexHandler(_ req: Request) throws -> EventLoopFuture<View> {
+        Acronym.query(on: req.db)
+            .with(\.$user)
+            .all()
+            .flatMap({ acronyms in
+                let isUserLoggedin = req.auth.has(User.self)
+                let response = AcronymResponse(acronyms: acronyms)
+                let shouldShowCookieMessage = req.cookies["cookies-accepted"] == nil
+                let context = IndexContext(isLoggedIn: isUserLoggedin,
+                                           title: "Home Page",
+                                           acronyms: response.acronyms,
+                                           shouldShowCookieMessage: shouldShowCookieMessage)
+                return req.view.render("index", context)
+            })
+    }
+    
+    
     func userDetail(_ req: Request) throws -> EventLoopFuture<View> {
         User.find(req.parameters.get("userID", as: UUID.self), on: req.db)
             .unwrap(or: Abort(.notFound))
@@ -178,42 +294,6 @@ private extension WebsiteController {
                                                       acronyms: acronyms)
                         return req.view.render("CategoryDetail", context)
                     }
-            }
-    }
-    
-    func createAcronym(_ req: Request) throws -> EventLoopFuture<View> {
-        let userQuery = User.query(on: req.db) .all()
-        
-        return userQuery
-            .flatMap { users in
-                let context = CreateAcronymContext(users: users)
-                return req.view.render("CreateAcronym", context)
-            }
-    }
-    
-    func createAcronymPost(_ req: Request) throws -> EventLoopFuture<Response> {
-        let dto = try req.content.decode(AcronymDTO.self)
-        let user = try req.auth.require(User.self)
-        let acronym = try Acronym(short: dto.short,
-                              long: dto.long,
-                                  userID: user.requireID())
-        return acronym.save(on: req.db)
-            .flatMap {
-                guard let id = acronym.id else {
-                    return req.eventLoop.future(error: Abort(.internalServerError))
-                }
-                var categoryQueries: [EventLoopFuture<Void>] = []
-                for category in dto.categories ?? [] {
-                    categoryQueries.append(
-                        Category.attachCategory(name: category,
-                                                to: acronym,
-                                                on: req)
-                    )
-                }
-                let redirects = req.redirect(to: "/acronym/\(id)")
-                return categoryQueries
-                    .flatten(on: req.eventLoop)
-                    .transform(to: redirects)
             }
     }
 }

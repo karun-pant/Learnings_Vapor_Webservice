@@ -50,9 +50,11 @@ final class AcronymTests: XCTestCase {
         let asap = Acronym.SampleAcronym.asap
         let acronymDTO = AcronymDTO(short: asap.short,
                                     long: asap.long)
-        try app.test(.POST, Acronym.apiBase, beforeRequest: { req in
+        try app.test(.POST, Acronym.apiBase,
+                     loggedInUser: expectedUser,
+                     beforeReq: { req in
             try req.content.encode(acronymDTO)
-        }, afterResponse: { response in
+        }, afterRes: { res in
             try app.test(.GET, "\(Acronym.apiBase)/base_typed", afterResponse: { res in
                 try expectationResponse(res,
                                         countExpectation: 1,
@@ -60,16 +62,18 @@ final class AcronymTests: XCTestCase {
             })
         })
         
-        
-        let lol = Acronym.SampleAcronym.asap
+        let lol = Acronym.SampleAcronym.lol
         let acronymDTO1 = AcronymDTO(short: lol.short,
                                      long: lol.long)
-        try app.test(.POST, Acronym.apiBase, beforeRequest: { req in
+        try app.test(.POST, Acronym.apiBase,
+                     loggedInUser: expectedUser,
+                     beforeReq: { req in
             try req.content.encode(acronymDTO1)
-        }, afterResponse: { response in
+        }, afterRes: { res in
             try app.test(.GET, "\(Acronym.apiBase)/base_typed", afterResponse: { res in
                 try expectationResponse(res,
                                         countExpectation: 2,
+                                        expectatedIndex: 1,
                                         expectedSample: lol)
             })
         })

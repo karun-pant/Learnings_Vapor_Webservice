@@ -9,22 +9,15 @@
 import XCTVapor
 import Fluent
 
-extension Application {
-    static func configureForTest() throws -> Application {
-        let app = Application(.testing)
-        try configure(app)
-        try app.autoRevert().wait()
-        try app.autoMigrate().wait()
-        return app
-    }
-}
-
 extension User {
     static let apiBase = "api/v1/user"
     static func createAndSave(name: String = "Test User",
-                  userName: String = "TUser",
-                  on db: Database) throws -> User {
-        let user = User(name: name, uName: userName, password: "password")
+                              userName: String? = nil,
+                              on db: Database) throws -> User {
+        
+        let userName = userName ?? UUID().uuidString
+        let pass = try Bcrypt.hash("password")
+        let user = User(name: name, uName: userName, password: pass)
         try user.save(on: db).wait()
         return user
     }

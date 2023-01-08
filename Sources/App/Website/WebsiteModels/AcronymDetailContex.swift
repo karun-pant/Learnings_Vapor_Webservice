@@ -16,13 +16,18 @@ struct AcronymDetailContex: Encodable {
 
 struct CreateAcronymContext: Encodable {
     let title: String = "Create an Acronym"
-    let users: [User]
+    let csrf: String
+    let error: String?
+    init(csrf: String,
+         error: String? = nil) {
+        self.csrf = csrf
+        self.error = error
+    }
 }
 
 struct EditAcronymContext: Encodable {
     let title = "Edit Acronym"
     let acronym: Acronym
-    let users: [User]
     let categories: [Category]
     let isEditing = true
 }

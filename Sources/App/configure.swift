@@ -6,8 +6,17 @@ import Leaf
 // configures your application
 public func configure(_ app: Application) throws {
     app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
+    app.middleware.use(app.sessions.middleware)
     app.views.use(.leaf)
     if app.environment == .testing {
+        /*
+         Using Docker DB created by Following command:
+         
+         docker run --name postgres -e POSTGRES_DB=learnings_database \
+          -e POSTGRES_USER=karun_learning \
+          -e POSTGRES_PASSWORD=nurak \
+          -p 5433:5432 -d postgres
+         */
         app.databases.use(.postgres(
             hostname: Environment.get("DATABASE_HOST") ?? "localhost",
             // USING A DIFFERENT POST FOR TESTS.

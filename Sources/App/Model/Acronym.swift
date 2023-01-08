@@ -47,11 +47,14 @@ struct AcronymDTO: Content {
     let short: String
     let long: String
     let categories: [String]?
+    let csrf: String?
     init(short: String,
          long: String,
-         categories: [String]? = nil) {
+         categories: [String]? = nil,
+         csrf: String? = nil) {
         self.short = short
         self.long = long
         self.categories = categories
+        self.csrf = csrf
     }
 }

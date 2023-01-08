@@ -20,7 +20,7 @@
                 </td>
                 #if(title=="Home Page"):
                 <td>
-                    <a href="/user/#(acronym.user.id)" class="link-danger">@#(acronym.user.uName)</a>
+                    <a href="/user/#(acronym.user.id)" class="link-danger text-decoration-none">@#(acronym.user.uName)</a>
                 </td>
                 #endif
             </tr>

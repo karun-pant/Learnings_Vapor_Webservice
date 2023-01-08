@@ -1,3 +1,13 @@
-<div class="container">
-    <p>&copy; 2023 All rights reserved to pk75, A KSP Company</p>
-</div>
+
+<footer id="container-footer">
+    #if(shouldShowCookieMessage):
+        <div id="cookie-footer">
+            <span class="muted">
+                This site uses cookies. To accept this, click 
+                <button type="button" onclick="cookieConfirmed()">OK</button>
+            </span>
+        </div>
+        #endif
+        <p>&copy; 2023 All rights reserved to pk75, A KSP Company</p>
+    <script src="/scripts/cookie.js"></script>
+</footer>
