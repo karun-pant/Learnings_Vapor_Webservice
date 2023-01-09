@@ -12,7 +12,7 @@ public func configure(_ app: Application) throws {
         /*
          Using Docker DB created by Following command:
          
-         docker run --name postgres -e POSTGRES_DB=learnings_database \
+         docker run --name postgres-test -e POSTGRES_DB=learnings_database \
           -e POSTGRES_USER=karun_learning \
           -e POSTGRES_PASSWORD=nurak \
           -p 5433:5432 -d postgres
@@ -34,10 +34,9 @@ public func configure(_ app: Application) throws {
            -e POSTGRES_PASSWORD=nurak \
            -p 5432:5432 -d postgres
           */
-        let port = app.environment.name == "website" ? PostgresConfiguration.ianaPortNumber : 5434
         app.databases.use(.postgres(
             hostname: Environment.get("DATABASE_HOST") ?? "localhost",
-            port: Environment.get("DATABASE_PORT").flatMap(Int.init(_:)) ?? port,
+            port: Environment.get("DATABASE_PORT").flatMap(Int.init(_:)) ?? PostgresConfiguration.ianaPortNumber,
             username: Environment.get("DATABASE_USERNAME") ?? "karun_learning",
             password: Environment.get("DATABASE_PASSWORD") ?? "nurak",
             database: Environment.get("DATABASE_NAME") ?? "learnings_database"
