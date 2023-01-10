@@ -1,6 +1,6 @@
 //
 //  ImperialController.swift
-//  
+//
 //
 //  Created by Karun Pant on 09/01/23.
 //
@@ -12,39 +12,35 @@ import ImperialGoogle
 struct ImperialController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
         guard let googleCallbackURL = Environment.get("GOOGLE_CALLBACK_URL") else {
-            fatalError("Google callback URL not set")
+            fatalError("Google callback URL not set.")
         }
-        try routes.oAuth(
-          from: Google.self,
-          authenticate: "login-google",
-          callback: googleCallbackURL,
-          scope: ["profile", "email"],
-          completion: processGoogleLogin)
+        try routes.oAuth(from: Google.self,
+                         authenticate: "login-google",
+                         callback: googleCallbackURL,
+                         scope: ["profile", "email"],
+                         completion: processGoogleLogin)
     }
     
-    func processGoogleLogin(_ request: Request, token: String) throws -> EventLoopFuture<ResponseEncodable> {
+    func processGoogleLogin(_ req: Request, token: String) throws -> EventLoopFuture<ResponseEncodable> {
         /// In a real world application, you may want to consider using a flag to separate out users registered on your site vs. logging in with OAuth.
-        try Google.getUser(request)
+        try Google.getUser(req)
             .flatMap { userInfo in
-                User.query(on: request.db)
+                User.query(on: req.db)
                     .filter(\.$uName == userInfo.email)
                     .first()
                     .flatMap { foundUser in
                         guard let existingUser = foundUser else {
-                            let user = User(
-                                name: userInfo.name,
-                                uName: userInfo.email,
-                                password: UUID().uuidString)
-                            return user
-                                .save(on: request.db)
+                            let user = User(name: userInfo.name,
+                                            uName: userInfo.email,
+                                            password: UUID().uuidString)
+                            return user.save(on: req.db)
                                 .map {
-                                    request.session.authenticate(user)
-                                    return request.redirect(to: "/")
+                                    req.session.authenticate(user)
+                                    return req.redirect(to: "/")
                                 }
                         }
-                        request.session.authenticate(existingUser)
-                        return request.eventLoop
-                            .future(request.redirect(to: "/"))
+                        req.session.authenticate(existingUser)
+                        return req.eventLoop.future(req.redirect(to: "/"))
                     }
             }
     }
@@ -52,26 +48,21 @@ struct ImperialController: RouteCollection {
 
 
 extension Google {
-    static func getUser(_ request: Request) throws -> EventLoopFuture<GoogleUserInfo> {
+    static func getUser(_ req: Request) throws -> EventLoopFuture<GoogleUser> {
         var headers = HTTPHeaders()
-        headers.bearerAuthorization =
-        try BearerAuthorization(token: request.accessToken())
-        let googleAPIURL: URI =
-        "https://www.googleapis.com/oauth2/v1/userinfo?alt=json"
-        return request
+        headers.bearerAuthorization = try BearerAuthorization(token: req.accessToken())
+        let googleAPI: URI = "https://www.googleapis.com/oauth2/v1/userinfo?alt=json"
+        return req
             .client
-            .get(googleAPIURL, headers: headers)
-            .flatMapThrowing { response in
-                // 5
-                guard response.status == .ok else {
-                    if response.status == .unauthorized {
+            .get(googleAPI).flatMapThrowing { res in
+                guard res.status == .ok else {
+                    if res.status == .unauthorized {
                         throw Abort.redirect(to: "/login-google")
                     } else {
                         throw Abort(.internalServerError)
                     }
                 }
-                return try response.content
-                    .decode(GoogleUserInfo.self)
-            }
+                return try res.content.decode(GoogleUser.self)
+        }
     }
 }
