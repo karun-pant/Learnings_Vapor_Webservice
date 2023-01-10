@@ -76,7 +76,7 @@ private extension WebsiteController {
             throw Abort(.unauthorized)
         }
         do {
-            try ProfileDTO.validate(content: req)
+            try ProfileDTO.validate(content: req) 
         } catch let error as ValidationsError {
             let message = error.description.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "Unknown Error"
             return req.eventLoop.future(req.redirect(to: "/profile/edit?message=\(message)"))
