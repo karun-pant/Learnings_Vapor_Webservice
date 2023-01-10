@@ -27,10 +27,7 @@
                             <a class="nav-link #if(title=="Home Page"): active#endif" aria-current="page" href="/">Home</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link #if(title=="Users"): active#endif" aria-current="page" href="/user/all">Users</a>
-                        </li>
-                        <li class="nav-item">
-                            
+                            <a class="nav-link #if(title=="Profile"): active#endif" aria-current="page" href="/profile">Profile</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link #if(title=="Create an Acronym"): active#endif" aria-current="page" href="/acronym/create">Create An Acronym</a>

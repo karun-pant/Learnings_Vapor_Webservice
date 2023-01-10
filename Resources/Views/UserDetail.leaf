@@ -1,7 +1,0 @@
-#extend("Base"):
-    #export("content"):
-       <h2>#(user.name)</h2>
-       <h4>@#(user.uName)</h4>
-       #extend("AcronymsTable")
-    #endexport
-#endextend

@@ -20,7 +20,6 @@ struct WebsiteController: RouteCollection {
         authSessionRoutes.get(use: indexHandler)
         authSessionRoutes.get("acronym", ":acronymID", use: acronymDetail)
         authSessionRoutes.get("acronym", ":acronymID", "edit", use: editAcronym)
-        authSessionRoutes.get("user", ":userID", use: userDetail)
         authSessionRoutes.get("user", "all", use: allUsersList)
         authSessionRoutes.get("category", "all", use: allCategories)
         authSessionRoutes.get("category", ":categoryID", use: categoryDetail)
@@ -35,6 +34,70 @@ struct WebsiteController: RouteCollection {
         protectedRoutes.post("acronym", ":acronymID", "delete", use: deleteAcronym)
         protectedRoutes.get("acronym", "create", use: createAcronym)
         protectedRoutes.post("acronym", "create", use: createAcronymPost)
+        protectedRoutes.get("profile", use: userProfile)
+        protectedRoutes.get("profile", "edit", use: editProfile)
+        protectedRoutes.post("profile", "edit", use: editProfilePost)
+    }
+}
+
+// MARK: - User Actions
+private extension WebsiteController {
+    func userProfile(_ req: Request) throws -> EventLoopFuture<View> {
+        try handleProfile(request: req)
+    }
+    
+    func editProfile(_ req: Request) throws -> EventLoopFuture<View> {
+        try handleProfile(request: req, isForEdit: true)
+    }
+    
+    func handleProfile(request req: Request, isForEdit: Bool = false) throws -> EventLoopFuture<View> {
+        let user = try req.auth.require(User.self)
+        return user.$acronyms.get(on: req.db)
+            .flatMap { acronyms in
+                let csrf = isForEdit ? [UInt8].random(count: 16).base64 : nil
+                let error = try? req.query.get(String.self, at: "message")
+                let context = UserContext(user: user,
+                                          acronyms: acronyms,
+                                          isEditing: isForEdit,
+                                          error: error,
+                                          csrf: csrf)
+                req.session.data["CSRF_TOKEN"] = csrf
+                return req.view.render("UserProfile", context)
+            }
+    }
+    
+    func editProfilePost(_ req: Request) throws -> EventLoopFuture<Response> {
+        let userForUpdate = try req.content.decode(ProfileDTO.self)
+        let expectedToken = req.session.data["CSRF_TOKEN"]
+        req.session.data["CSRF_TOKEN"] = nil
+        guard let expectedToken = expectedToken,
+              let csrfFromDTO = userForUpdate.csrf,
+              csrfFromDTO == expectedToken else {
+            throw Abort(.unauthorized)
+        }
+        do {
+            try ProfileDTO.validate(content: req)
+        } catch let error as ValidationsError {
+            let message = error.description.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "Unknown Error"
+            return req.eventLoop.future(req.redirect(to: "/profile/edit?message=\(message)"))
+        }
+        let user = try req.auth.require(User.self)
+        user.email = userForUpdate.email
+        user.name = userForUpdate.name
+        return user.save(on: req.db).flatMap {
+            let redirect = req.redirect(to: "/profile")
+            return req.eventLoop.future(redirect)
+        }
+    }
+    
+    func allUsersList(_ req: Request) throws -> EventLoopFuture<View> {
+        User.query(on: req.db)
+            .all()
+            .flatMap { users in
+                let context = AllUsersContext(title: "Users",
+                                              users: users)
+                return req.view.render("AllUsers", context)
+            }
     }
 }
 
@@ -251,29 +314,6 @@ private extension WebsiteController {
             })
     }
     
-    
-    func userDetail(_ req: Request) throws -> EventLoopFuture<View> {
-        User.find(req.parameters.get("userID", as: UUID.self), on: req.db)
-            .unwrap(or: Abort(.notFound))
-            .flatMap { user in
-                user.$acronyms.get(on: req.db)
-                    .flatMap { acronyms in
-                        let context = UserContext(title: user.name,
-                                                  user: user,
-                                                  acronyms: acronyms)
-                        return req.view.render("UserDetail", context)
-                    }
-            }
-    }
-    func allUsersList(_ req: Request) throws -> EventLoopFuture<View> {
-        User.query(on: req.db)
-            .all()
-            .flatMap { users in
-                let context = AllUsersContext(title: "Users",
-                                              users: users)
-                return req.view.render("AllUsers", context)
-            }
-    }
     func allCategories(_ req: Request) throws -> EventLoopFuture<View> {
         Category.query(on: req.db)
             .all()

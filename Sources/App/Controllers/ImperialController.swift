@@ -27,17 +27,17 @@ struct ImperialController: RouteCollection {
         try Google.getUser(req)
             .flatMap { userInfo in
                 User.query(on: req.db)
-                    .filter(\.$uName == userInfo.email)
+                    .filter(\.$uName == userInfo.userName)
                     .first()
                     .flatMap { foundUser in
                         guard let existingUser = foundUser else {
-                            let userName = userInfo.email.components(separatedBy: "@").first ?? userInfo.email
                             let user = User(
                                 name: userInfo.name,
-                                uName: userName,
-                                password: UUID().uuidString)
+                                uName: userInfo.userName,
+                                password: UUID().uuidString,
+                                email: userInfo.email)
                             return user
-                                .save(on: request.db)
+                                .save(on: req.db)
                                 .map {
                                     req.session.authenticate(user)
                                     return req.redirect(to: "/")

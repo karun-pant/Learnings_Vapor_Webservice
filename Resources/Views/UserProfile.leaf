@@ -1,0 +1,47 @@
+#extend("Base"):
+    #export("content"):
+        #if(isEditing):
+            #if(error):
+                <div class="alert alert-danger mt-3" role="alert">
+                    #(error)
+                </div>
+            #endif
+            <form method="post">
+                <input type="hidden" name="csrf" value=#(csrf)>
+                <div class="mt-3">
+                    <label for="name" class="col-sm-2 col-form-label">Name</label>
+                    <input class="form-control" 
+                    type="text" name="name" 
+                    aria-label="Name" 
+                    value="#(user.name)"
+                    >
+                </div>
+                <div class="mt-3">
+                    <label for="email" class="col-sm-2 col-form-label">Email</label>
+                    <input class="form-control" 
+                    type="text" 
+                    name="email"
+                    aria-label="Email"
+                    value="#(user.email)"
+                    >
+                </div>
+                <div class="mt-3">
+                    <button type="submit" class="btn btn-primary col-sm-2 col">
+                        Update
+                    </button>
+                    <a class ="btn btn-secondary" href="/profile"> Cancel</a>
+                </div>
+            </form>
+        #else:
+            <h3>#(user.name)</h2>
+            <h4>#(user.email)</h4>
+            <h4>@#(user.uName)</h4>
+            <div class="mt-3">
+                <a class ="btn btn-primary" href="/profile/edit"> Edit</a>
+            </div>
+            <div class="mt-3">
+                #extend("AcronymsTable")
+            </div>
+        #endif
+    #endexport
+#endextend
