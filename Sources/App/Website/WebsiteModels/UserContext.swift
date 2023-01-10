@@ -5,7 +5,7 @@
 //  Created by Karun Pant on 02/01/23.
 //
 
-import Foundation
+import Vapor
 
 struct UserContext: Encodable {
     let title: String
@@ -16,4 +16,9 @@ struct UserContext: Encodable {
 struct AllUsersContext: Encodable {
     let title: String
     let users: [User]
+}
+
+struct GoogleUserInfo: Content {
+    let email: String
+    let name: String
 }
