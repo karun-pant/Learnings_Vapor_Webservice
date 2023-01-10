@@ -55,7 +55,7 @@ extension Google {
         let googleAPI: URI = "https://www.googleapis.com/oauth2/v1/userinfo?alt=json"
         return req
             .client
-            .get(googleAPI).flatMapThrowing { res in
+            .get(googleAPI, headers: headers).flatMapThrowing { res in
                 guard res.status == .ok else {
                     if res.status == .unauthorized {
                         throw Abort.redirect(to: "/login-google")
