@@ -31,9 +31,10 @@ struct ImperialController: RouteCollection {
                     .first()
                     .flatMap { foundUser in
                         guard let existingUser = foundUser else {
+                            let userName = userInfo.email.components(separatedBy: "@").first ?? userInfo.email
                             let user = User(
                                 name: userInfo.name,
-                                uName: userInfo.email,
+                                uName: userName,
                                 password: UUID().uuidString)
                             return user
                                 .save(on: request.db)
