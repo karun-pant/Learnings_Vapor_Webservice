@@ -12,13 +12,14 @@ import ImperialGoogle
 struct ImperialController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
         guard let googleCallbackURL = Environment.get("GOOGLE_CALLBACK_URL") else {
-            fatalError("Google callback URL not set.")
+            fatalError("Google callback URL not set")
         }
-        try routes.oAuth(from: Google.self,
-                         authenticate: "login-google",
-                         callback: googleCallbackURL,
-                         scope: ["profile", "email"],
-                         completion: processGoogleLogin)
+        try routes.oAuth(
+            from: Google.self,
+            authenticate: "login-google",
+            callback: googleCallbackURL,
+            scope: ["profile", "email"],
+            completion: processGoogleLogin)
     }
     
     func processGoogleLogin(_ req: Request, token: String) throws -> EventLoopFuture<ResponseEncodable> {
@@ -48,7 +49,7 @@ struct ImperialController: RouteCollection {
 
 
 extension Google {
-    static func getUser(_ req: Request) throws -> EventLoopFuture<GoogleUser> {
+    static func getUser(_ req: Request) throws -> EventLoopFuture<GoogleUserInfo> {
         var headers = HTTPHeaders()
         headers.bearerAuthorization = try BearerAuthorization(token: req.accessToken())
         let googleAPI: URI = "https://www.googleapis.com/oauth2/v1/userinfo?alt=json"
@@ -62,7 +63,7 @@ extension Google {
                         throw Abort(.internalServerError)
                     }
                 }
-                return try res.content.decode(GoogleUser.self)
+                return try res.content.decode(GoogleUserInfo.self)
         }
     }
 }
