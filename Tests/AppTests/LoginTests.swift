@@ -43,7 +43,8 @@ extension XCTApplicationTester {
             } else {
                 userToLogin = User(name: "Admin User",
                                    uName: "admin",
-                                   password: "password")
+                                   password: "password",
+                                   email: "admin@email.com")
             }
             let token = try login(userToLogin)
             request.headers.bearerAuthorization = .init(token: token.value)

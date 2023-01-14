@@ -9,6 +9,7 @@ import Vapor
 import Leaf
 
 struct WebsiteController: RouteCollection {
+    
     func boot(routes: RoutesBuilder) throws {
         routes.get("login" ,use: login)
         /// This creates a route group that runs DatabaseSessionAuthenticator before the route handlers. This middleware reads the cookie from the request and looks up the session ID in the application’s session list. If the session contains a user, DatabaseSessionAuthenticator adds it to the request’s authentication cache, making the user available later in the process.
@@ -29,7 +30,13 @@ struct WebsiteController: RouteCollection {
         
         
         /// “This creates a new route group, extending from authSessionsRoutes, that includes RedirectMiddleware for User. The application runs a request through RedirectMiddleware before it reaches the route handler, but after DatabaseSessionAuthenticator. This allows RedirectMiddleware to check for an authenticated user. RedirectMiddleware requires you to specify the path for redirecting unauthenticated users.
-        let protectedRoutes = authSessionRoutes.grouped(User.redirectMiddleware(path: "/login"))
+        /// authSessionRoutes.grouped(User.redirectMiddleware(path: "/login"))
+        let protectedRoutes = authSessionRoutes.grouped(User.redirectMiddleware { req in
+            if let blockedURI = req.url.string.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) {
+                return "/login?prevURI=\(blockedURI)"
+            }
+            return "/login"
+        })
         protectedRoutes.post("acronym", ":acronymID", "edit", use: editAcronymPost)
         protectedRoutes.post("acronym", ":acronymID", "delete", use: deleteAcronym)
         protectedRoutes.get("acronym", "create", use: createAcronym)
@@ -70,8 +77,9 @@ private extension WebsiteController {
         let userForUpdate = try req.content.decode(ProfileDTO.self)
         let expectedToken = req.session.data["CSRF_TOKEN"]
         req.session.data["CSRF_TOKEN"] = nil
+        let csrfFromDTO = userForUpdate.csrf
+        
         guard let expectedToken = expectedToken,
-              let csrfFromDTO = userForUpdate.csrf,
               csrfFromDTO == expectedToken else {
             throw Abort(.unauthorized)
         }
@@ -107,17 +115,24 @@ private extension WebsiteController {
     func login(_ req: Request) throws -> EventLoopFuture<View> {
         let context: LoginContext
         if let error = req.query[Bool.self, at: "error"], error {
-            context = LoginContext(loginError: true)
+            let prevURI = (try? req.query.get(String.self ,at: "prevURI").removingPercentEncoding) ?? ""
+            context = LoginContext(loginError: true, previousURI: prevURI)
         } else {
-            context = LoginContext()
+            let prevURI = (try? req.query.get(String.self ,at: "prevURI").removingPercentEncoding) ?? ""
+            context = LoginContext(previousURI: prevURI)
         }
         return req.view.render("login", context)
     }
     func loginHandler(_ req: Request) throws -> EventLoopFuture<Response> {
         if req.auth.has(User.self) {
+            if let previousURI = try? req.query.get(String.self ,at: "prevURI").removingPercentEncoding,
+                !previousURI.isEmpty {
+                return req.eventLoop.future(req.redirect(to: previousURI))
+            }
             return req.eventLoop.future(req.redirect(to: "/"))
         } else {
-            let context = LoginContext(loginError: true)
+            let prevURI = (try? req.query.get(String.self ,at: "prevURI").removingPercentEncoding) ?? ""
+            let context = LoginContext(loginError: true, previousURI: prevURI)
             return req.view.render("login", context)
                 .encodeResponse(for: req)
         }
@@ -149,7 +164,7 @@ private extension WebsiteController {
         }
         let registerDTO = try req.content.decode(UserDTO.self)
         let password = try Bcrypt.hash(registerDTO.password)
-        let user = User(name: registerDTO.name, uName: registerDTO.userName, password: password)
+        let user = User(name: registerDTO.name, uName: registerDTO.userName, password: password, email: registerDTO.email)
         return user.save(on: req.db)
             .map {
                 req.auth.login(user)

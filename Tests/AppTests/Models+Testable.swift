@@ -13,11 +13,12 @@ extension User {
     static let apiBase = "api/v1/user"
     static func createAndSave(name: String = "Test User",
                               userName: String? = nil,
+                              email: String = "test@gmail.com",
                               on db: Database) throws -> User {
         
         let userName = userName ?? UUID().uuidString
         let pass = try Bcrypt.hash("password")
-        let user = User(name: name, uName: userName, password: pass)
+        let user = User(name: name, uName: userName, password: pass, email: email)
         try user.save(on: db).wait()
         return user
     }

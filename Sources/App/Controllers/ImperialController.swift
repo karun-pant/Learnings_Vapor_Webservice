@@ -40,14 +40,21 @@ struct ImperialController: RouteCollection {
                                 .save(on: req.db)
                                 .map {
                                     req.session.authenticate(user)
-                                    return req.redirect(to: "/")
+                                    if let previousURI = try? req.query.get(String.self ,at: "prevURI").removingPercentEncoding {
+                                        return req.eventLoop.future(req.redirect(to: previousURI))
+                                    }
+                                    return req.eventLoop.future(req.redirect(to: "/"))
                                 }
                         }
                         req.session.authenticate(existingUser)
+                        if let previousURI = try? req.query.get(String.self ,at: "prevURI").removingPercentEncoding {
+                            return req.eventLoop.future(req.redirect(to: previousURI))
+                        }
                         return req.eventLoop.future(req.redirect(to: "/"))
                     }
             }
     }
+    
 }
 
 

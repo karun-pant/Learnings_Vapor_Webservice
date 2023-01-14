@@ -24,7 +24,7 @@ final class User: Model, Content {
     var password: String
     
     @Field(key: "email")
-    var email: String?
+    var email: String
     
     @Children(for: \.$user)
     var acronyms: [Acronym]
@@ -35,7 +35,7 @@ final class User: Model, Content {
          name: String,
          uName: String,
          password: String,
-         email: String? = nil) {
+         email: String) {
         self.id = id
         self.name = name
         self.uName = uName
@@ -78,4 +78,5 @@ extension User: ModelAuthenticatable {
     }
 }
 
-extension User: ModelSessionAuthenticatable, ModelCredentialsAuthenticatable { }
+extension User: ModelSessionAuthenticatable, ModelCredentialsAuthenticatable {
+}

@@ -31,8 +31,8 @@ struct GoogleUserInfo: Content {
 
 struct ProfileDTO: Content {
     let name: String
-    let email: String?
-    let csrf: String?
+    let email: String
+    let csrf: String
 }
 
 extension ProfileDTO: Validatable {

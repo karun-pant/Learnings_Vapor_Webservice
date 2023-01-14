@@ -10,17 +10,23 @@ import Vapor
 struct LoginContext: Encodable {
     let title = "Login"
     let loginError: Bool
+    let previousURI: String
     
-    init(loginError: Bool = false) {
+    init(loginError: Bool = false,
+         previousURI: String) {
         self.loginError = loginError
+        self.previousURI = previousURI
     }
 }
 
 struct RegisterContext: Encodable {
     let title = "Register"
     let message: String?
-    init(message: String? = nil) {
+    let previousURI: String
+    init(message: String? = nil,
+         previousURI: String = "") {
         self.message = message
+        self.previousURI = previousURI
     }
 }
 
@@ -29,6 +35,7 @@ struct UserDTO: Content {
     let userName: String
     let password: String
     let confirmPassword: String
+    let email: String
 }
 
 extension UserDTO: Validatable {
@@ -36,5 +43,6 @@ extension UserDTO: Validatable {
         validations.add("name", as: String.self, is: .ascii)
         validations.add("userName", as: String.self, is: .alphanumeric && .count(3...))
         validations.add("password", as: String.self, is: .count(8...))
+        validations.add("email", as: String.self, is: .email)
     }
 }

@@ -20,7 +20,7 @@ final class UserTests: BaseTestSetup {
                                               userName: expectedUserName,
                                               on: app.db)
         try expectedUser.save(on: app.db).wait()
-        let anotherUser = User(name: "Testing Bob", uName: "TBob", password: pass)
+        let anotherUser = User(name: "Testing Bob", uName: "TBob", password: pass, email: "test@email.com")
         try anotherUser.save(on: app.db).wait()
         
         // test
@@ -30,7 +30,7 @@ final class UserTests: BaseTestSetup {
     }
     
     func testCreateUser() throws {
-        let expectedUser = User(name: expectedName, uName: expectedUserName, password: pass)
+        let expectedUser = User(name: expectedName, uName: expectedUserName, password: pass, email: "test@gmail.com")
         try app.test(.POST, User.apiBase, beforeRequest: { req in
             try req.content.encode(expectedUser)
         }, afterResponse: { response in

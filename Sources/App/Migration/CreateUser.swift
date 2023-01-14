@@ -34,7 +34,7 @@ struct CreateAdminUser: Migration {
         catch {
             return database.eventLoop.future(error: error)
         }
-        let user = User(name: "Admin User", uName: "admin", password: pass)
+        let user = User(name: "Admin User", uName: "admin", password: pass, email: "admin@email.com")
         return user.save(on: database)
     }
     func revert(on database: Database) -> EventLoopFuture<Void> {
