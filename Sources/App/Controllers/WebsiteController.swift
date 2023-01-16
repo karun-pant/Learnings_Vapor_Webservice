@@ -7,6 +7,7 @@
 
 import Vapor
 import Leaf
+import Fluent
 
 struct WebsiteController: RouteCollection {
     
@@ -27,7 +28,8 @@ struct WebsiteController: RouteCollection {
         authSessionRoutes.post("logout", use: logout)
         authSessionRoutes.get("register", use: registerRender)
         authSessionRoutes.post("register", use: registerPost)
-        
+        authSessionRoutes.get("reset-password", use: forgotPassword)
+        authSessionRoutes.post("reset-password", use: forgotPasswordPost)
         
         /// “This creates a new route group, extending from authSessionsRoutes, that includes RedirectMiddleware for User. The application runs a request through RedirectMiddleware before it reaches the route handler, but after DatabaseSessionAuthenticator. This allows RedirectMiddleware to check for an authenticated user. RedirectMiddleware requires you to specify the path for redirecting unauthenticated users.
         /// authSessionRoutes.grouped(User.redirectMiddleware(path: "/login"))
@@ -140,6 +142,28 @@ private extension WebsiteController {
     func logout(_ req: Request) throws -> Response {
         req.auth.logout(User.self)
         return req.redirect(to: "/")
+    }
+    
+    func forgotPassword(_ req: Request) throws -> EventLoopFuture<View> {
+        req.view.render("ForgotPassword",
+                        ["title": "Reset Your Password"])
+    }
+    
+    func forgotPasswordPost(_ req: Request) throws -> EventLoopFuture<View> {
+        let email = try req.content.get(String.self, at: "email")
+        return User.query(on: req.db)
+            .filter(\.$email == email)
+            .first()
+            .flatMap { user in
+                if user != nil {
+                    return req.view.render("ForgotPassword",
+                                           ["title": "Reset Your Password",
+                                            "success": "Instructions to reset your password have been emailed to you."])
+                }
+                return req.view.render("ForgotPassword",
+                                       ["title": "Reset Your Password",
+                                        "error": "User with this email id is not available."])
+            }
     }
 }
 

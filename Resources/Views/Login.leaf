@@ -24,5 +24,7 @@
             Do not have an account
             <a class ="btn btn-secondary" href="/register"> Register </a>
         </div>
+        <br>
+        <a href="/reset-password">Forgot Password?</a>
     #endexport    
 #endextend
