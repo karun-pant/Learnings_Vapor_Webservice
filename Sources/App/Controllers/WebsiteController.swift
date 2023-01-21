@@ -154,7 +154,7 @@ private extension WebsiteController {
 extension WebsiteController {
     
     func updatePassword(_ req: Request) throws -> EventLoopFuture<View> {
-        guard let token = req.parameters.get("token", as: String.self) else {
+        guard let token = try? req.query.get(String.self, at: "token") else {
             return req.view.render("UpdatePassword",
                                    ResetPasswordContext(error: "There was a problem with the form. Ensure you clicked on the full link with the token and your passwords match."))
         }
@@ -227,7 +227,7 @@ extension WebsiteController {
                     .flatMap { _ in
                         let emailMessage = """
                                             <p>
-                                                You've requested to reset password. <a href="localhost: 8080/password/update?token=\(token)"> Click Here </a> to reset your password.
+                                                You've requested to reset password. <a href="http://localhost:8080/password/update?token=\(token)"> Click Here </a> to reset your password.
                                             </p>
                                             """
                         let fromEmail = EmailAddress(email: "pantkarun75@gmail.com", name: "Vapor Learning!!!")
