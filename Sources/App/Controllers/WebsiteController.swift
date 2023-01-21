@@ -8,6 +8,7 @@
 import Vapor
 import Leaf
 import Fluent
+import SendGrid
 
 struct WebsiteController: RouteCollection {
     
@@ -46,6 +47,7 @@ struct WebsiteController: RouteCollection {
         protectedRoutes.get("profile", use: userProfile)
         protectedRoutes.get("profile", "edit", use: editProfile)
         protectedRoutes.post("profile", "edit", use: editProfilePost)
+        
     }
 }
 
@@ -143,7 +145,11 @@ private extension WebsiteController {
         req.auth.logout(User.self)
         return req.redirect(to: "/")
     }
-    
+}
+
+// MARK: - Forgot password
+
+extension WebsiteController {
     func forgotPassword(_ req: Request) throws -> EventLoopFuture<View> {
         req.view.render("ForgotPassword",
                         ["title": "Reset Your Password"])
@@ -155,14 +161,49 @@ private extension WebsiteController {
             .filter(\.$email == email)
             .first()
             .flatMap { user in
-                if user != nil {
+                guard let user else {
                     return req.view.render("ForgotPassword",
                                            ["title": "Reset Your Password",
-                                            "success": "Instructions to reset your password have been emailed to you."])
+                                            "error": "User with this email id is not available."])
                 }
-                return req.view.render("ForgotPassword",
-                                       ["title": "Reset Your Password",
-                                        "error": "User with this email id is not available."])
+                
+                // send email
+                let token = Data([UInt8].random(count: 32)).base64EncodedString()
+                let resetToken: ResetPasswordToken
+                do {
+                    resetToken = try ResetPasswordToken(token: token,
+                                                        userID: user.requireID())
+                } catch {
+                    return req.eventLoop.future(error: error)
+                }
+                return resetToken.save(on: req.db)
+                    .flatMap { _ in
+                        let emailMessage = """
+                                            <p>
+                                                You've requested to reset password. <a href="localhost: 8080/resetPassword?token=\(token)"> Click Here </a> to reset your password.
+                                            </p>
+                                            """
+                        let fromEmail = EmailAddress(email: "pantkarun75@gmail.com", name: "Vapor Learning!!!")
+                        let toEmail = EmailAddress(email: user.email, name: user.name)
+                        let emailConfig = Personalization(to: [toEmail],
+                                                          subject: "Reset Password")
+                        let email = SendGridEmail(personalizations: [emailConfig],
+                                                  from: fromEmail,
+                                                  content: [[ "type": "text/html",
+                                                              "value": emailMessage ]])
+                        let emailSendFuture: EventLoopFuture<Void>
+                        do {
+                            emailSendFuture = try req.application.sendgrid.client.send(email: email,
+                                                                                       on: req.eventLoop)
+                        } catch {
+                            return req.eventLoop.future(error: error)
+                        }
+                        return emailSendFuture.flatMap { _ in
+                            return req.view.render("ForgotPassword",
+                                                   ["title": "Reset Your Password",
+                                                    "success": "Instructions to reset your password have been emailed to you."])
+                        }
+                    }
             }
     }
 }
