@@ -31,6 +31,8 @@ struct WebsiteController: RouteCollection {
         authSessionRoutes.post("register", use: registerPost)
         authSessionRoutes.get("reset-password", use: forgotPassword)
         authSessionRoutes.post("reset-password", use: forgotPasswordPost)
+        authSessionRoutes.get("password", "update", use: updatePassword)
+        authSessionRoutes.post("password", "update", use: updatePasswordPost)
         
         /// “This creates a new route group, extending from authSessionsRoutes, that includes RedirectMiddleware for User. The application runs a request through RedirectMiddleware before it reaches the route handler, but after DatabaseSessionAuthenticator. This allows RedirectMiddleware to check for an authenticated user. RedirectMiddleware requires you to specify the path for redirecting unauthenticated users.
         /// authSessionRoutes.grouped(User.redirectMiddleware(path: "/login"))
@@ -150,6 +152,51 @@ private extension WebsiteController {
 // MARK: - Forgot password
 
 extension WebsiteController {
+    
+    func updatePassword(_ req: Request) throws -> EventLoopFuture<View> {
+        guard let token = req.parameters.get("token", as: String.self) else {
+            return req.view.render("UpdatePassword",
+                                   ResetPasswordContext(error: "There was a problem with the form. Ensure you clicked on the full link with the token and your passwords match."))
+        }
+        return ResetPasswordToken.query(on: req.db)
+            .filter(\.$token == token)
+            .first()
+            .unwrap(or: Abort.redirect(to: "/"))
+            .flatMap { token in
+                token.$user.get(on: req.db)
+                    .flatMap { user in
+                        do {
+                            try req.session.set("Reset Password User", to: user)
+                        } catch {
+                            return req.eventLoop.future(error: error)
+                        }
+                        return token.delete(on: req.db)
+                    }
+            }
+            .flatMap {
+                return req.view.render("UpdatePassword", ResetPasswordContext())
+            }
+    }
+    
+    func updatePasswordPost(_ req: Request) throws -> EventLoopFuture<Response> {
+        let data = try req.content.decode(ResetPasswordData.self)
+        guard data.password == data.confirmPassword else {
+            return req
+                .view
+                .render("UpdatePassword",
+                        ResetPasswordContext(error: "Password and Confirm Password do not match."))
+                .encodeResponse(for: req)
+        }
+        let resetPasswordSessionUser = try req.session.get("Reset Password User", as: User.self)
+        req.session.data["Reset Password User"] = nil
+        let newPassword = try Bcrypt.hash(data.password)
+        return try User.query(on: req.db)
+            .filter(\.$id == resetPasswordSessionUser.requireID())
+            .set(\.$password, to: newPassword)
+            .update()
+            .transform(to: req.redirect(to: "/login"))
+    }
+    
     func forgotPassword(_ req: Request) throws -> EventLoopFuture<View> {
         req.view.render("ForgotPassword",
                         ["title": "Reset Your Password"])
@@ -180,7 +227,7 @@ extension WebsiteController {
                     .flatMap { _ in
                         let emailMessage = """
                                             <p>
-                                                You've requested to reset password. <a href="localhost: 8080/resetPassword?token=\(token)"> Click Here </a> to reset your password.
+                                                You've requested to reset password. <a href="localhost: 8080/password/update?token=\(token)"> Click Here </a> to reset your password.
                                             </p>
                                             """
                         let fromEmail = EmailAddress(email: "pantkarun75@gmail.com", name: "Vapor Learning!!!")
