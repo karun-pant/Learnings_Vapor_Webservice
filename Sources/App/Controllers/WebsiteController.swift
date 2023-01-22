@@ -12,6 +12,8 @@ import SendGrid
 
 struct WebsiteController: RouteCollection {
     
+    let imageFolder = "ProfilePictures/"
+    
     func boot(routes: RoutesBuilder) throws {
         routes.get("login" ,use: login)
         /// This creates a route group that runs DatabaseSessionAuthenticator before the route handlers. This middleware reads the cookie from the request and looks up the session ID in the application’s session list. If the session contains a user, DatabaseSessionAuthenticator adds it to the request’s authentication cache, making the user available later in the process.
@@ -33,6 +35,7 @@ struct WebsiteController: RouteCollection {
         authSessionRoutes.post("reset-password", use: forgotPasswordPost)
         authSessionRoutes.get("password", "update", use: updatePassword)
         authSessionRoutes.post("password", "update", use: updatePasswordPost)
+        authSessionRoutes.get("user", "profilePic", ":imageName", use: getProfilePic)
         
         /// “This creates a new route group, extending from authSessionsRoutes, that includes RedirectMiddleware for User. The application runs a request through RedirectMiddleware before it reaches the route handler, but after DatabaseSessionAuthenticator. This allows RedirectMiddleware to check for an authenticated user. RedirectMiddleware requires you to specify the path for redirecting unauthenticated users.
         /// authSessionRoutes.grouped(User.redirectMiddleware(path: "/login"))
@@ -49,6 +52,9 @@ struct WebsiteController: RouteCollection {
         protectedRoutes.get("profile", use: userProfile)
         protectedRoutes.get("profile", "edit", use: editProfile)
         protectedRoutes.post("profile", "edit", use: editProfilePost)
+        protectedRoutes.on(.POST, "profile", "edit", ":userID",
+                           body: .collect(maxSize: "10mb"),
+                           use: profilePicUpload)
         
     }
 }
@@ -102,6 +108,39 @@ private extension WebsiteController {
             let redirect = req.redirect(to: "/profile")
             return req.eventLoop.future(redirect)
         }
+    }
+    
+    func profilePicUpload(_ req: Request) throws -> EventLoopFuture<Response> {
+        let profilePicData = try req.content.decode(ProfilePicture.self)
+        let expectedToken = req.session.data["CSRF_TOKEN"]
+        req.session.data["CSRF_TOKEN"] = nil
+        let csrfFromDTO = profilePicData.csrf
+        
+        guard let expectedToken = expectedToken,
+              csrfFromDTO == expectedToken else {
+            throw Abort(.unauthorized)
+        }
+        let user = try req.auth.require(User.self)
+        let userID = try user.requireID()
+        let imageName = "\(userID)-\(UUID().uuidString).jpg"
+        let path = req.application.directory.workingDirectory + imageFolder + imageName
+        return req.fileio
+            .writeFile(.init(data: profilePicData.picture), at: path)
+            .flatMap { _ in
+                user.profilePicURL = "user/profilePic/\(imageName)"
+                return user.save(on: req.db).flatMap { _ in
+                    let redirect = req.redirect(to: "/profile/edit")
+                    return req.eventLoop.future(redirect)
+                }
+            }
+    }
+    
+    func getProfilePic(_ req: Request) throws -> EventLoopFuture<Response> {
+        guard let imageName = req.parameters.get("imageName", as: String.self) else {
+            throw Abort(.notFound)
+        }
+        let path = req.application.directory.workingDirectory + imageFolder + imageName
+        return req.eventLoop.future(req.fileio.streamFile(at: path))
     }
     
     func allUsersList(_ req: Request) throws -> EventLoopFuture<View> {

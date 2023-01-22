@@ -36,6 +36,11 @@ struct ProfileDTO: Content {
     let csrf: String
 }
 
+struct ProfilePicture: Content {
+    let picture: Data
+    let csrf: String
+}
+
 extension ProfileDTO: Validatable {
     static func validations(_ validations: inout Validations) {
         validations.add("name", as: String.self, is: .ascii)
