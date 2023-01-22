@@ -29,13 +29,14 @@ struct ImperialController: RouteCollection {
                 User.query(on: req.db)
                     .filter(\.$uName == userInfo.userName)
                     .first()
-                    .flatMap { foundUser in
+                    .flatMapThrowing { foundUser in
                         guard let existingUser = foundUser else {
                             let user = User(
                                 name: userInfo.name,
                                 uName: userInfo.userName,
                                 password: UUID().uuidString,
-                                email: userInfo.email)
+                                email: userInfo.email,
+                                profilePicURL: userInfo.picture)
                             return user
                                 .save(on: req.db)
                                 .map {
@@ -46,11 +47,19 @@ struct ImperialController: RouteCollection {
                                     return req.eventLoop.future(req.redirect(to: "/"))
                                 }
                         }
-                        req.session.authenticate(existingUser)
-                        if let previousURI = try? req.query.get(String.self ,at: "prevURI").removingPercentEncoding {
-                            return req.eventLoop.future(req.redirect(to: previousURI))
+                        let previousURI = (try? req.query.get(String.self ,at: "prevURI").removingPercentEncoding) ?? "/"
+                        if existingUser.profilePicURL == nil {
+                            return try User.query(on: req.db)
+                                .filter(\.$id == existingUser.requireID())
+                                .set(\.$profilePicURL, to: userInfo.picture)
+                                .update()
+                                .flatMapThrowing { _ in
+                                    req.session.authenticate(existingUser)
+                                    return req.eventLoop.future(req.redirect(to: previousURI))
+                                }
                         }
-                        return req.eventLoop.future(req.redirect(to: "/"))
+                        req.session.authenticate(existingUser)
+                        return req.eventLoop.future(req.redirect(to: previousURI))
                     }
             }
     }

@@ -24,6 +24,7 @@ struct AllUsersContext: Encodable {
 struct GoogleUserInfo: Content {
     let email: String
     let name: String
+    let picture: String?
     var userName: String {
         email.components(separatedBy: "@").first ?? email
     }

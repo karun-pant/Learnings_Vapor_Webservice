@@ -33,9 +33,21 @@
                 </div>
             </form>
         #else:
-            <h3>#(user.name)</h2>
-            <h4>#(user.email)</h4>
-            <h4>@#(user.uName)</h4>
+            
+            <div class = "container mt-3">
+                <div class = "row justify-content-md-left">
+                    #if(user.profilePicURL):
+                        <div class = "col-md-auto">
+                            <img src=#(user.profilePicURL) alt="Profile Picture" class="img-thumbnail">
+                        </div>
+                    #endif
+                    <div class = "col-6">
+                        <h3>#(user.name)</h2>
+                        <h4>#(user.email)</h4>
+                        <h4>@#(user.uName)</h4>
+                    </div>
+                </div>
+            </div>
             <div class="mt-3">
                 <a class ="btn btn-primary" href="/profile/edit"> Edit</a>
             </div>
