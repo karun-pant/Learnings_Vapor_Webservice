@@ -10,19 +10,26 @@ import FluentKit
 
 final class Acronym: Model, Content {
     
-    static let schema: String = "acronyms"
+    enum v1 {
+        static let schema = "acronyms"
+        static let short = FieldKey(stringLiteral: "short")
+        static let long = FieldKey(stringLiteral: "long")
+        static let userID = FieldKey(stringLiteral: "userID")
+    }
+    
+    static let schema: String = v1.schema
     
     @ID
     var id: UUID?
     
-    @Field(key: "short")
+    @Field(key: v1.short)
     var short: String
     
-    @Field(key: "long")
+    @Field(key: v1.long)
     var long: String
     
     // Parent child  relationship similar to Foreign key
-    @Parent(key: "userID")
+    @Parent(key: v1.userID)
     var user: User
     
     @Siblings(through: AcronymCategoryPivot.self,
